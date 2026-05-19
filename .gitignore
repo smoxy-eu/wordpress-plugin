@@ -1,0 +1,8 @@
+.DS_Store
+/vendor/
+/ci-artifacts/
+/build/
+/dist/
+/.phpunit.result.cache
+/.claude/
+/.claude-*/

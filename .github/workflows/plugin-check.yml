@@ -1,0 +1,53 @@
+name: Plugin Check
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: plugin-check-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  plugin-check:
+    name: wp plugin check
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: wordpress
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -uroot -proot --silent"
+          --health-interval=2s
+          --health-timeout=5s
+          --health-retries=30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+          extensions: mysqli, mbstring, xml
+          tools: composer:v2, wp-cli
+      - name: Bootstrap WordPress + install plugin
+        run: |
+          set -e
+          mkdir -p /tmp/wp && cd /tmp/wp
+          wp core download --version=latest
+          echo "--- resolved WP version ---"
+          wp core version
+          wp config create --dbname=wordpress --dbuser=root --dbpass=root --dbhost=127.0.0.1:3306
+          wp core install --url=http://localhost --title=Test --admin_user=admin \
+            --admin_password=admin --admin_email=test@example.com --skip-email
+          mkdir -p wp-content/plugins/smoxy
+          rsync -a \
+            --exclude=.git --exclude=.github --exclude=vendor --exclude=node_modules \
+            "${GITHUB_WORKSPACE}/" wp-content/plugins/smoxy/
+          wp plugin install plugin-check --activate
+          wp plugin check smoxy

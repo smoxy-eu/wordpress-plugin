@@ -1,0 +1,158 @@
+name: Smoke
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '0 5 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: smoke-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  smoke:
+    name: PHP ${{ matrix.php }} / WP ${{ matrix.wp }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { php: '8.0', wp: '6.0' }
+          - { php: '8.1', wp: '6.0' }
+          - { php: '8.1', wp: 'latest' }
+          - { php: '8.2', wp: 'latest' }
+          - { php: '8.3', wp: 'latest' }
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: wordpress
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -uroot -proot --silent"
+          --health-interval=2s
+          --health-timeout=5s
+          --health-retries=30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+          extensions: mysqli, mbstring, xml
+          tools: composer:v2, wp-cli
+      - name: Activate, exercise, uninstall
+        id: smoke
+        run: |
+          set -e
+          mkdir -p /tmp/wp /tmp/artifacts && cd /tmp/wp
+          wp core download --version="${{ matrix.wp }}"
+          echo "--- resolved WP version ---"
+          wp core version
+          wp core version > /tmp/artifacts/wp-version.txt
+          wp config create --dbname=wordpress --dbuser=root --dbpass=root --dbhost=127.0.0.1:3306
+          wp config set WP_DEBUG true --raw --type=constant
+          wp config set WP_DEBUG_LOG true --raw --type=constant
+          wp config set WP_DEBUG_DISPLAY false --raw --type=constant
+          wp core install --url=http://localhost --title=Smoke --admin_user=admin \
+            --admin_password=admin --admin_email=test@example.com --skip-email
+          mkdir -p wp-content/plugins/smoxy
+          rsync -a \
+            --exclude=.git --exclude=.github --exclude=vendor --exclude=node_modules \
+            "${GITHUB_WORKSPACE}/" wp-content/plugins/smoxy/
+          trap 'cp wp-content/debug.log /tmp/artifacts/debug.log 2>/dev/null || true' EXIT
+          wp plugin activate smoxy
+          wp plugin is-active smoxy
+          wp post create --post_type=post --post_title=Smoke --post_status=publish --porcelain
+          wp option update blogname Smoke
+          wp cache flush
+          wp plugin deactivate smoxy
+          # --skip-delete: run uninstall.php but skip the filesystem rmdir,
+          # which fails on the bind-mounted plugin directory.
+          wp plugin uninstall smoxy --skip-delete
+          if wp option get smoxy_settings 2>/dev/null; then
+            echo "Options not cleaned up"; exit 1
+          else
+            echo "Options cleaned up"
+          fi
+          LOG=$(cat wp-content/debug.log 2>/dev/null || true)
+          echo "--- debug.log ---"
+          echo "$LOG"
+          echo "--- end debug.log ---"
+          if echo "$LOG" | grep -E "PHP (Fatal|Warning|Parse|Deprecated) " >/dev/null; then
+            echo "PHP errors detected in debug.log"; exit 1
+          fi
+      - name: Upload artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-php${{ matrix.php }}-wp${{ matrix.wp }}
+          path: /tmp/artifacts/
+          retention-days: 7
+
+  smoke-trunk:
+    name: PHP 8.3 / WP trunk (allowed to fail)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: wordpress
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -uroot -proot --silent"
+          --health-interval=2s
+          --health-timeout=5s
+          --health-retries=30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+          extensions: mysqli, mbstring, xml
+          tools: composer:v2, wp-cli
+      - run: |
+          set -e
+          mkdir -p /tmp/wp /tmp/artifacts && cd /tmp/wp
+          wp core download --version=nightly
+          wp core version > /tmp/artifacts/wp-version.txt
+          wp config create --dbname=wordpress --dbuser=root --dbpass=root --dbhost=127.0.0.1:3306
+          wp config set WP_DEBUG true --raw --type=constant
+          wp config set WP_DEBUG_LOG true --raw --type=constant
+          wp config set WP_DEBUG_DISPLAY false --raw --type=constant
+          wp core install --url=http://localhost --title=Smoke --admin_user=admin \
+            --admin_password=admin --admin_email=test@example.com --skip-email
+          mkdir -p wp-content/plugins/smoxy
+          rsync -a \
+            --exclude=.git --exclude=.github --exclude=vendor --exclude=node_modules \
+            "${GITHUB_WORKSPACE}/" wp-content/plugins/smoxy/
+          trap 'cp wp-content/debug.log /tmp/artifacts/debug.log 2>/dev/null || true' EXIT
+          wp plugin activate smoxy
+          wp plugin is-active smoxy
+          wp post create --post_type=post --post_title=Smoke --post_status=publish --porcelain
+          wp option update blogname Smoke
+          wp cache flush
+          wp plugin deactivate smoxy
+          wp plugin uninstall smoxy --skip-delete
+          LOG=$(cat wp-content/debug.log 2>/dev/null || true)
+          echo "--- debug.log ---"
+          echo "$LOG"
+          echo "--- end debug.log ---"
+          if echo "$LOG" | grep -E "PHP (Fatal|Warning|Parse|Deprecated) " >/dev/null; then
+            echo "PHP errors detected in debug.log"; exit 1
+          fi
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-trunk
+          path: /tmp/artifacts/
+          retention-days: 7

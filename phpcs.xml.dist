@@ -1,0 +1,55 @@
+<?xml version="1.0"?>
+<ruleset name="smoxy Proxy">
+	<description>Coding standards for the smoxy Proxy plugin.</description>
+
+	<file>.</file>
+
+	<exclude-pattern>*/.git/*</exclude-pattern>
+	<exclude-pattern>*/vendor/*</exclude-pattern>
+	<exclude-pattern>*/node_modules/*</exclude-pattern>
+	<exclude-pattern>*/languages/*</exclude-pattern>
+	<exclude-pattern>*/.wordpress-org/*</exclude-pattern>
+	<exclude-pattern>tests/bootstrap.php</exclude-pattern>
+
+	<arg name="extensions" value="php"/>
+	<arg name="colors"/>
+	<arg value="sp"/>
+	<arg name="parallel" value="8"/>
+
+	<config name="minimum_supported_wp_version" value="6.0"/>
+	<config name="testVersion" value="8.0-"/>
+
+	<rule ref="WordPress-Extra">
+		<exclude name="Generic.Commenting.DocComment.MissingShort"/>
+		<exclude name="Squiz.Commenting.FileComment.Missing"/>
+		<exclude name="Squiz.Commenting.ClassComment.Missing"/>
+		<exclude name="Squiz.Commenting.FunctionComment.Missing"/>
+		<exclude name="Squiz.Commenting.VariableComment.Missing"/>
+		<!-- PSR-4 autoloader (composer.json) requires PascalCase filenames (Plugin.php, not class-plugin.php). Mutually exclusive with WPCS file-naming rule. -->
+		<exclude name="WordPress.Files.FileName"/>
+	</rule>
+
+	<!-- Test fixtures contain raw <link>/<script> markup for HTML parsing, not
+	     for rendering — the wp_enqueue_* enforcement is irrelevant there. -->
+	<rule ref="WordPress.WP.EnqueuedResources">
+		<exclude-pattern>tests/*</exclude-pattern>
+	</rule>
+
+	<rule ref="WordPress.WP.I18n">
+		<properties>
+			<property name="text_domain" type="array">
+				<element value="smoxy"/>
+			</property>
+		</properties>
+	</rule>
+
+	<rule ref="WordPress.NamingConventions.PrefixAllGlobals">
+		<properties>
+			<property name="prefixes" type="array">
+				<element value="smoxy"/>
+				<element value="Smoxy\WP"/>
+				<element value="SMOXY_"/>
+			</property>
+		</properties>
+	</rule>
+</ruleset>
