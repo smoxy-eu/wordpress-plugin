@@ -11,6 +11,7 @@ class Plugin {
 		( new Settings() )->register();
 		( new CacheTags() )->register();
 		( new EventBus() )->register();
+		( new WooCommerce() )->register();
 
 		add_filter(
 			'plugin_action_links_' . plugin_basename( SMOXY_PLUGIN_FILE ),
