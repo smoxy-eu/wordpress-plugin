@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning 2.0.0](https://semver.org/spec/
 
 ## [Unreleased]
 
+## [0.0.1] - 2026-05-19
+
 ### Added
 
 - Initial plugin functionality: connects WordPress to the smoxy proxy edge cache service.
@@ -23,4 +25,5 @@ and this project adheres to [Semantic Versioning 2.0.0](https://semver.org/spec/
 
 - Relicensed from GPL-2.0-or-later to MIT.
 
-[Unreleased]: https://github.com/smoxy-eu/wordpress-plugin/compare/HEAD...HEAD
+[Unreleased]: https://github.com/smoxy-eu/wordpress-plugin/compare/v0.0.1...HEAD
+[0.0.1]: https://github.com/smoxy-eu/wordpress-plugin/releases/tag/v0.0.1
