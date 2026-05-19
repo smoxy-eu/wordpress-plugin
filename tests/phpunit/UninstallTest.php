@@ -18,13 +18,6 @@ class UninstallTest extends WP_UnitTestCase {
 	public function test_uninstall_removes_options_and_notice_transients(): void {
 		// Seed state that uninstall.php must remove.
 		update_option( 'smoxy_settings', array( 'secret_key' => 'will-be-deleted' ) );
-		update_option(
-			'smoxy_connection_status',
-			array(
-				'ok'         => true,
-				'checked_at' => time(),
-			)
-		);
 
 		// Two user-scoped notice transients, mimicking what handle_purge*()
 		// writes after a form submit.
@@ -46,7 +39,6 @@ class UninstallTest extends WP_UnitTestCase {
 		);
 
 		$this->assertNotEmpty( get_option( 'smoxy_settings' ) );
-		$this->assertNotEmpty( get_option( 'smoxy_connection_status' ) );
 		$this->assertNotFalse( get_transient( 'smoxy_purge_notice_42' ) );
 
 		// uninstall.php guards on WP_UNINSTALL_PLUGIN before doing anything.
@@ -57,7 +49,6 @@ class UninstallTest extends WP_UnitTestCase {
 		require dirname( __DIR__, 2 ) . '/uninstall.php';
 
 		$this->assertFalse( get_option( 'smoxy_settings', false ) );
-		$this->assertFalse( get_option( 'smoxy_connection_status', false ) );
 		$this->assertFalse( get_transient( 'smoxy_purge_notice_42' ) );
 		$this->assertFalse( get_transient( 'smoxy_purge_notice_7' ) );
 

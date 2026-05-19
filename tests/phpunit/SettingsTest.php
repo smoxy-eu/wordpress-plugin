@@ -340,31 +340,6 @@ class SettingsTest extends WP_UnitTestCase {
 	}
 
 	/* ------------------------------------------------------------------
-	 * Check connection
-	 * ------------------------------------------------------------------ */
-
-	public function test_check_connection_runs_connection_checker_and_redirects(): void {
-		$this->login_admin_with_nonce( Settings::CHECK_ACTION );
-		delete_option( 'smoxy_connection_status' );
-
-		$location = $this->capture_redirect(
-			fn () => ( new Settings() )->handle_check()
-		);
-
-		$this->assertStringContainsString( 'page=' . Settings::SETTINGS_SLUG, $location );
-		$this->assertIsArray( get_option( 'smoxy_connection_status' ) );
-	}
-
-	public function test_check_connection_blocks_non_admin(): void {
-		$sub = self::factory()->user->create( array( 'role' => 'subscriber' ) );
-		wp_set_current_user( $sub );
-		$_REQUEST['_wpnonce'] = wp_create_nonce( Settings::CHECK_ACTION );
-
-		$this->expectException( WPDieException::class );
-		( new Settings() )->handle_check();
-	}
-
-	/* ------------------------------------------------------------------
 	 * Notice feedback loop
 	 * ------------------------------------------------------------------ */
 

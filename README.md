@@ -30,7 +30,6 @@ Learn more at [smoxy.eu](https://www.smoxy.eu) or read the full product docs at 
 - **Gives you one-click control.**
   - A **Purge smoxy Proxy cache** button is available right in the WordPress admin bar.
   - A dedicated **smoxy Proxy** menu provides a settings page with manual purge tools.
-- **Shows your connection status.** See at a glance whether your site is actually being served through smoxy Proxy.
 - **Purges individual pages or assets on demand.** Clear a specific page, image, JS, CSS or other file by its URL.
 
 ## Features
@@ -38,7 +37,6 @@ Learn more at [smoxy.eu](https://www.smoxy.eu) or read the full product docs at 
 - Automatic cache invalidation on content changes
 - "Purge all" from the admin bar or settings page
 - "Purge by URL" for any cacheable resource (pages, images, JS, CSS, fonts, …)
-- Live connection status with on-demand recheck
 - Clean, native WordPress admin experience — no external dashboards to learn
 
 ## Requirements
@@ -72,10 +70,6 @@ Then activate **smoxy Proxy** from the WordPress admin.
 Log in to the [smoxy hub](https://hub.smoxy.eu) — or create a **free account** if you don't have one yet. Open your Zone, go to the **Basic configuration** menu, and copy the token shown there. See the [setup guide in the docs](https://docs.smoxy.eu) for a walkthrough.
 
 ## Using the plugin
-
-### Check your connection
-
-The Settings page shows **Connecting to smoxy Proxy: Yes / No**. The status refreshes automatically, and you can click **Check connection** at any time to re-test.
 
 ### Purge everything
 

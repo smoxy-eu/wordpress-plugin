@@ -9,7 +9,6 @@
 defined( 'WP_UNINSTALL_PLUGIN' ) || exit;
 
 delete_option( 'smoxy_settings' );
-delete_option( 'smoxy_connection_status' );
 
 global $wpdb;
 

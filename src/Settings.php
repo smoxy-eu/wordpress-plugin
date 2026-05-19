@@ -14,7 +14,6 @@ class Settings {
 	public const PURGE_ACTION     = 'smoxy_purge_all';
 	public const PURGE_URL_ACTION = 'smoxy_purge_url';
 	public const PURGE_TAG_ACTION = 'smoxy_purge_tag';
-	public const CHECK_ACTION     = 'smoxy_check_connection';
 	public const NOTICE_KEY       = 'smoxy_purge_notice';
 
 	public function register(): void {
@@ -23,7 +22,6 @@ class Settings {
 		add_action( 'admin_post_' . self::PURGE_ACTION, array( $this, 'handle_purge' ) );
 		add_action( 'admin_post_' . self::PURGE_URL_ACTION, array( $this, 'handle_purge_url' ) );
 		add_action( 'admin_post_' . self::PURGE_TAG_ACTION, array( $this, 'handle_purge_tag' ) );
-		add_action( 'admin_post_' . self::CHECK_ACTION, array( $this, 'handle_check' ) );
 		add_action( 'admin_notices', array( $this, 'render_notice' ) );
 		add_action( 'admin_bar_menu', array( $this, 'add_admin_bar_node' ), 100 );
 	}
@@ -181,8 +179,6 @@ class Settings {
 				</p>
 			</div>
 
-			<?php $this->render_connection_panel(); ?>
-
 			<form action="options.php" method="post">
 				<?php
 				settings_fields( self::OPTION_GROUP );
@@ -232,58 +228,6 @@ class Settings {
 			</form>
 		</div>
 		<?php
-	}
-
-	private function render_connection_panel(): void {
-		$status = ConnectionChecker::get_status();
-
-		$stale = null === $status
-				|| empty( $status['checked_at'] )
-				|| ( time() - (int) $status['checked_at'] ) > 5 * MINUTE_IN_SECONDS;
-
-		if ( $stale ) {
-			$status = ( new ConnectionChecker() )->check();
-		}
-
-		$ok = is_array( $status ) && array_key_exists( 'ok', $status ) ? $status['ok'] : false;
-		if ( true === $ok ) {
-			$class = 'notice-success';
-			$value = __( 'Yes', 'smoxy' );
-		} elseif ( null === $ok ) {
-			$class = 'notice-warning';
-			$value = __( 'Unknown', 'smoxy' );
-		} else {
-			$class = 'notice-error';
-			$value = __( 'No', 'smoxy' );
-		}
-
-		$url = wp_nonce_url(
-			add_query_arg( 'action', self::CHECK_ACTION, admin_url( 'admin-post.php' ) ),
-			self::CHECK_ACTION
-		);
-		?>
-		<div class="notice <?php echo esc_attr( $class ); ?> inline"
-			style="padding:12px 16px;margin:15px 0;display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
-			<p style="margin:0;flex:1 1 auto;font-weight:600;">
-				<?php echo esc_html__( 'Connecting to smoxy Proxy:', 'smoxy' ); ?>
-				<span><?php echo esc_html( $value ); ?></span>
-			</p>
-			<a class="button"
-				href="<?php echo esc_url( $url ); ?>"><?php echo esc_html__( 'Check connection', 'smoxy' ); ?></a>
-		</div>
-		<?php
-	}
-
-	public function handle_check(): void {
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_die( esc_html__( 'You do not have permission to do this.', 'smoxy' ), '', array( 'response' => 403 ) );
-		}
-		check_admin_referer( self::CHECK_ACTION );
-
-		( new ConnectionChecker() )->check();
-
-		wp_safe_redirect( admin_url( 'admin.php?page=' . self::SETTINGS_SLUG ) );
-		exit;
 	}
 
 	public function handle_purge_url(): void {

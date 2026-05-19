@@ -33,10 +33,6 @@ What is sent with each request:
 
 No personal data, analytics, or telemetry is sent — only what smoxy needs to identify which content to purge.
 
-= Local connection check =
-
-The plugin issues a GET request to your site's own home URL and inspects the response's `Server` header to detect whether traffic is being served through smoxy. This request is local to your site and is not sent to smoxy.
-
 = Terms and privacy =
 
 By using this plugin you are sending requests to a smoxy-operated service. Review the [smoxy privacy policy](https://www.smoxy.eu/datenschutz) for details on how smoxy handles this data.

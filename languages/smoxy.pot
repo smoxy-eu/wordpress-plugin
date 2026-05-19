@@ -38,34 +38,6 @@ msgstr ""
 msgid "smoxy"
 msgstr ""
 
-#. translators: 1: WP_Error code, 2: WP_Error message
-#: src/ConnectionChecker.php:38
-#, php-format
-msgid "Connection check failed (%1$s): %2$s"
-msgstr ""
-
-#. translators: %d: HTTP status code
-#: src/ConnectionChecker.php:55
-#, php-format
-msgid "Origin returned HTTP %d."
-msgstr ""
-
-#. translators: %s: Server header value
-#: src/ConnectionChecker.php:62
-#, php-format
-msgid "Connected — origin responded with Server: %s"
-msgstr ""
-
-#: src/ConnectionChecker.php:68
-msgid "Response is 2xx but the Server header is missing, so the smoxy fingerprint could not be confirmed. This is common when a reverse proxy strips the Server header."
-msgstr ""
-
-#. translators: %s: Server header value
-#: src/ConnectionChecker.php:71
-#, php-format
-msgid "Response is 2xx but the Server header (\"%s\") does not contain \"smoxy\", so the smoxy fingerprint could not be confirmed."
-msgstr ""
-
 #: src/Plugin.php:23
 #: src/Settings.php:73
 msgid "Settings"
@@ -246,26 +218,6 @@ msgstr ""
 
 #: src/Settings.php:227
 msgid "Purge tags"
-msgstr ""
-
-#: src/Settings.php:247
-msgid "Yes"
-msgstr ""
-
-#: src/Settings.php:250
-msgid "Unknown"
-msgstr ""
-
-#: src/Settings.php:253
-msgid "No"
-msgstr ""
-
-#: src/Settings.php:264
-msgid "Connecting to smoxy Proxy:"
-msgstr ""
-
-#: src/Settings.php:268
-msgid "Check connection"
 msgstr ""
 
 #: src/Settings.php:275
