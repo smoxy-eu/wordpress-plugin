@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       mysql:
-        image: mysql:8.0
+        image: mysql:8.4
         env:
           MYSQL_ROOT_PASSWORD: root
           MYSQL_DATABASE: wordpress
@@ -28,7 +28,7 @@ jobs:
           --health-timeout=5s
           --health-retries=30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
@@ -46,8 +46,10 @@ jobs:
           wp core install --url=http://localhost --title=Test --admin_user=admin \
             --admin_password=admin --admin_email=test@example.com --skip-email
           mkdir -p wp-content/plugins/smoxy
-          rsync -a \
-            --exclude=.git --exclude=.github --exclude=vendor --exclude=node_modules \
+          # Mirror the distributable plugin (same exclusions as the release
+          # workflow uses) so plugin-check inspects only what ships, not
+          # tests/, OSS docs, vendor/, build/, etc.
+          rsync -a --exclude-from="${GITHUB_WORKSPACE}/.distignore" \
             "${GITHUB_WORKSPACE}/" wp-content/plugins/smoxy/
           wp plugin install plugin-check --activate
           wp plugin check smoxy

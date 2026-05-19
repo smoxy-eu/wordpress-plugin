@@ -14,7 +14,9 @@ class CacheTags {
 	}
 
 	public function send_header(): void {
-		$method = isset( $_SERVER['REQUEST_METHOD'] ) ? strtoupper( (string) $_SERVER['REQUEST_METHOD'] ) : 'GET';
+		$method = isset( $_SERVER['REQUEST_METHOD'] )
+			? strtoupper( sanitize_key( wp_unslash( $_SERVER['REQUEST_METHOD'] ) ) )
+			: 'GET';
 		if ( 'GET' !== $method && 'HEAD' !== $method ) {
 			return;
 		}
