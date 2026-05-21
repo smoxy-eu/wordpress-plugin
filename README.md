@@ -41,7 +41,7 @@ Learn more at [smoxy.eu](https://www.smoxy.eu) or read the full product docs at 
 
 ## Requirements
 
-- WordPress 6.0 or newer (tested up to 6.9)
+- WordPress 6.0 or newer (tested up to 7.0)
 - PHP 8.0 or newer
 - A [smoxy account](https://hub.smoxy.eu) with a Zone configured for your domain
 
