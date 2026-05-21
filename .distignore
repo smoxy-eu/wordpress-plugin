@@ -17,7 +17,6 @@
 /phpstan.neon.dist
 /phpunit.xml.dist
 /tests
-/vendor
 /build
 /dist
 /ci-artifacts

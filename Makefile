@@ -52,7 +52,9 @@ lint: ## Run phpstan + phpcs.
 build-dev: ## Build an upload-ready dev zip in dist/ (mirrors release.yml).
 	@rm -rf build dist
 	@mkdir -p build/smoxy dist
+	composer install --no-dev --no-interaction --optimize-autoloader --prefer-dist
 	@rsync -a --exclude-from=.distignore --exclude='.claude' ./ build/smoxy/
+	composer install --no-interaction --prefer-dist
 	@STAMP="$$(date +%Y%m%d-%H%M)"; \
 	ZIP="smoxy-$(CURRENT_VERSION)-dev-$$STAMP.zip"; \
 	( cd build && zip -qr "../dist/$$ZIP" smoxy ); \

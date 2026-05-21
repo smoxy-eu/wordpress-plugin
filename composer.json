@@ -5,7 +5,8 @@
   "license": "MIT",
   "homepage": "https://www.smoxy.eu",
   "require": {
-    "php": ">=8.0"
+    "php": ">=8.0",
+    "yahnis-elsts/plugin-update-checker": "^5.4"
   },
   "require-dev": {
     "dealerdirect/phpcodesniffer-composer-installer": "^1.0",

@@ -37,6 +37,8 @@ jobs:
           coverage: none
           extensions: mysqli, mbstring, xml
           tools: composer:v2, wp-cli
+      - name: Install production composer deps
+        run: composer install --no-dev --no-interaction --optimize-autoloader --prefer-dist
       - name: Bootstrap WordPress + install plugin
         run: |
           set -e
@@ -50,7 +52,7 @@ jobs:
           mkdir -p wp-content/plugins/smoxy
           # Mirror the distributable plugin (same exclusions as the release
           # workflow uses) so plugin-check inspects only what ships, not
-          # tests/, OSS docs, vendor/, build/, etc.
+          # tests/, OSS docs, build/, etc.
           rsync -a --exclude-from="${GITHUB_WORKSPACE}/.distignore" \
             "${GITHUB_WORKSPACE}/" wp-content/plugins/smoxy/
           wp plugin install plugin-check --activate
