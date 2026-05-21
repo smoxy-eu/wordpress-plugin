@@ -56,6 +56,15 @@ jobs:
           done
           [ "$fail" = "0" ]
 
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          coverage: none
+          tools: composer:v2
+
+      - name: Install production composer deps
+        run: composer install --no-dev --no-interaction --optimize-autoloader --prefer-dist
+
       - name: Build distribution archives
         env:
           VERSION: ${{ steps.version.outputs.version }}

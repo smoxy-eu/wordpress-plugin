@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning 2.0.0](https://semver.org/spec/
 
 ## [Unreleased]
 
+### Added
+
+- In-WordPress update notifications: the plugin now checks the GitHub Releases for new versions on WP's normal update schedule and surfaces the standard "new version available" notice on the Plugins screen, with one-click install. Powered by [`yahnis-elsts/plugin-update-checker`](https://github.com/YahnisElsts/plugin-update-checker), configured to pull the published `smoxy-X.Y.Z.zip` release asset.
+
+### Changed
+
+- Release/plugin-check workflows and `make build-dev` now run `composer install --no-dev --optimize-autoloader` before packaging so the production `vendor/` directory ships inside the distributable zip (previously `vendor/` was excluded entirely).
+
 ## [1.1.0] - 2026-05-21
 
 ### Added

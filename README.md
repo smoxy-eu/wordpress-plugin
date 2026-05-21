@@ -69,6 +69,10 @@ Then activate **smoxy** from the WordPress admin.
 
 Log in to the [smoxy hub](https://hub.smoxy.eu) — or create a **free account** if you don't have one yet. Open your Zone, go to the **Basic configuration** menu, and copy the token shown there. See the [setup guide in the docs](https://docs.smoxy.eu) for a walkthrough.
 
+### Updates
+
+Once installed, the plugin checks the [GitHub Releases page](https://github.com/smoxy-eu/wordpress-plugin/releases) for new versions on WordPress's normal update schedule (roughly every 12 hours). When a newer release is available you'll see the standard **"new version available"** notice on **Plugins → Installed Plugins** and can install it with the usual one-click update — exactly like a plugin from wordpress.org.
+
 ## Using the plugin
 
 ### Purge everything
