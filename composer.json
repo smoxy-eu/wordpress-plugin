@@ -1,6 +1,6 @@
 {
-  "name": "smoxy/smoxy-proxy",
-  "description": "Connects WordPress to the Smoxy Proxy cache service.",
+  "name": "smoxy/smoxy",
+  "description": "Connects WordPress to the smoxy cache service.",
   "type": "wordpress-plugin",
   "license": "MIT",
   "homepage": "https://www.smoxy.eu",

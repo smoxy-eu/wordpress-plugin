@@ -1,4 +1,4 @@
-=== smoxy Proxy ===
+=== smoxy ===
 Contributors: smoxy
 Tags: cache, cdn, performance, purge, edge-cache
 Requires at least: 6.0
@@ -8,7 +8,7 @@ Stable tag: 1.0.1
 License: MIT
 License URI: https://opensource.org/licenses/MIT
 
-Connects WordPress to smoxy Proxy. Keeps the edge cache in sync — purging pages automatically when content changes.
+Connects WordPress to smoxy. Keeps the edge cache in sync — purging pages automatically when content changes.
 
 == Description ==
 

@@ -1,8 +1,8 @@
 <?php
 /**
- * Plugin Name:       smoxy Proxy
+ * Plugin Name:       smoxy
  * Plugin URI:        https://www.smoxy.eu
- * Description:       Connects WordPress to the smoxy Proxy cache service — purges and invalidates cached pages on the edge when content changes.
+ * Description:       Connects WordPress to the smoxy cache service — purges and invalidates cached pages on the edge when content changes.
  * Version:           1.0.1
  * Requires at least: 6.0
  * Tested up to:      7.0

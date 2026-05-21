@@ -25,12 +25,32 @@ defined( 'ABSPATH' ) || exit;
 class WooCommerce {
 
 	public function register(): void {
+		add_action( 'save_post_product', array( $this, 'on_product_saved' ), 10, 2 );
 		add_action( 'save_post_product_variation', array( $this, 'on_variation_saved' ), 10, 2 );
+
+		// WC's CRUD data store fires these on every product/variation update
+		// — including meta-only changes like price edits — where save_post
+		// might be skipped. They are the reliable signal for cache invalidation.
+		add_action( 'woocommerce_update_product', array( $this, 'on_product_updated' ), 10, 1 );
+		add_action( 'woocommerce_new_product', array( $this, 'on_product_updated' ), 10, 1 );
+		add_action( 'woocommerce_update_product_variation', array( $this, 'on_variation_updated' ), 10, 1 );
 
 		add_action( 'woocommerce_product_set_stock', array( $this, 'on_product_stock_changed' ), 10, 1 );
 		add_action( 'woocommerce_variation_set_stock', array( $this, 'on_variation_stock_changed' ), 10, 1 );
 		add_action( 'woocommerce_product_set_stock_status', array( $this, 'on_product_stock_status_changed' ), 10, 3 );
 		add_action( 'woocommerce_variation_set_stock_status', array( $this, 'on_variation_stock_status_changed' ), 10, 3 );
+	}
+
+	public function on_product_saved( int $product_id, \WP_Post $product ): void { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter -- $product is part of the save_post_{$type} signature.
+		$this->queue_product_purge( $product_id );
+	}
+
+	public function on_product_updated( int $product_id ): void {
+		$this->queue_product_purge( $product_id );
+	}
+
+	public function on_variation_updated( int $variation_id ): void {
+		$this->queue_parent_purge( $variation_id );
 	}
 
 	public function on_variation_saved( int $variation_id, \WP_Post $variation ): void { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed -- $variation is part of the save_post_{$type} signature.
