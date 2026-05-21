@@ -68,37 +68,23 @@ class SettingsTest extends WP_UnitTestCase {
 	 * Page rendering
 	 * ------------------------------------------------------------------ */
 
-	public function test_settings_page_renders_all_forms_and_controls_for_admin(): void {
+	public function test_settings_page_with_no_api_token_renders_token_wizard(): void {
 		wp_set_current_user( $this->admin_id );
+		// Strip any leftover state — the wizard's first step is gated on
+		// api_token being empty.
+		delete_option( Settings::OPTION_NAME );
 		( new Settings() )->register_settings();
 
 		ob_start();
 		( new Settings() )->render_page();
 		$html = (string) ob_get_clean();
 
-		$this->assertStringContainsString( 'smoxy Proxy Settings', $html );
-
-		// Secret token field (registered via the Settings API).
-		$this->assertStringContainsString( 'id="smoxy_secret_key"', $html );
-
-		// Purge all form.
-		$this->assertStringContainsString( 'value="' . Settings::PURGE_ACTION . '"', $html );
-
-		// Purge by URL form.
-		$this->assertStringContainsString( 'id="smoxy_purge_url"', $html );
-		$this->assertStringContainsString( 'value="' . Settings::PURGE_URL_ACTION . '"', $html );
-
-		// Purge by tag form.
-		$this->assertStringContainsString( 'id="smoxy_purge_tag"', $html );
-		$this->assertStringContainsString( 'value="' . Settings::PURGE_TAG_ACTION . '"', $html );
-
-		// Each form carries a WP nonce field.
-		preg_match_all( '/name="_wpnonce"\s+value="([a-f0-9]+)"/', $html, $matches );
-		$this->assertGreaterThanOrEqual(
-			3,
-			count( $matches[1] ),
-			'Each purge form must contain a _wpnonce hidden field'
-		);
+		$this->assertStringContainsString( '1. Connect to smoxy', $html );
+		$this->assertStringContainsString( 'id="smoxy_api_token"', $html );
+		$this->assertStringContainsString( 'value="' . Settings::SAVE_TOKEN_ACTION . '"', $html );
+		// The wizard's first step does NOT render the purge controls — those
+		// only appear once a zone is bound.
+		$this->assertStringNotContainsString( 'id="smoxy_purge_url"', $html );
 	}
 
 	public function test_settings_page_outputs_nothing_for_non_admin(): void {
@@ -344,65 +330,33 @@ class SettingsTest extends WP_UnitTestCase {
 	 * ------------------------------------------------------------------ */
 
 	/* ------------------------------------------------------------------
-	 * Secret-key field rendering (Phase 1: masked / no stored value in HTML)
+	 * sanitize() — must pass api-driven keys through unchanged so
+	 * Settings::update_options() from admin-post handlers is not silently
+	 * undone by register_setting()'s sanitize_callback hook.
 	 * ------------------------------------------------------------------ */
 
-	public function test_render_secret_key_field_does_not_leak_stored_token_into_html(): void {
-		// Store a sentinel token, render the field, assert the token never
-		// appears in the HTML and that the description says one is saved.
-		update_option( Settings::OPTION_NAME, array( 'secret_key' => 'secret-sentinel-abc' ) );
-
-		ob_start();
-		( new Settings() )->render_secret_key_field();
-		$html = (string) ob_get_clean();
-
-		$this->assertStringNotContainsString( 'secret-sentinel-abc', $html, 'Stored token must never be rendered into the page' );
-		$this->assertStringContainsString( 'value=""', $html, 'value attribute must be empty so the token is not exposed' );
-		$this->assertStringContainsString( 'secret token is saved', $html, 'Description must indicate that a token is on file' );
-	}
-
-	public function test_render_secret_key_field_prompts_for_token_when_unset(): void {
-		update_option( Settings::OPTION_NAME, array( 'secret_key' => '' ) );
-
-		ob_start();
-		( new Settings() )->render_secret_key_field();
-		$html = (string) ob_get_clean();
-
-		$this->assertStringContainsString( 'value=""', $html );
-		// One of the placeholder / description copies must prompt the user.
-		$this->assertMatchesRegularExpression(
-			'/Paste\s+(your\s+)?(the\s+)?(smoxy\s+)?secret token/i',
-			$html,
-			'Empty-state copy should prompt the user to paste a token'
+	public function test_sanitize_passes_through_api_driven_fields(): void {
+		$output = ( new Settings() )->sanitize(
+			array(
+				'api_token'       => 'tok-abc',
+				'organization_id' => 5,
+				'zone_id'         => 2606,
+				'zone_secret'     => 'banSecret',
+				'secret_key'      => 'legacy',
+			)
 		);
+
+		$this->assertSame( 'tok-abc', $output['api_token'] ?? null );
+		$this->assertSame( 5, $output['organization_id'] ?? null );
+		$this->assertSame( 2606, $output['zone_id'] ?? null );
+		$this->assertSame( 'banSecret', $output['zone_secret'] ?? null );
+		$this->assertSame( 'legacy', $output['secret_key'] ?? null );
 	}
 
-	/* ------------------------------------------------------------------
-	 * sanitize() preserves the stored token on empty/whitespace submit
-	 * ------------------------------------------------------------------ */
+	public function test_sanitize_trims_secret_key_when_present(): void {
+		$output = ( new Settings() )->sanitize( array( 'secret_key' => "  paste\n" ) );
 
-	public function test_sanitize_preserves_stored_token_on_empty_submit(): void {
-		update_option( Settings::OPTION_NAME, array( 'secret_key' => 'kept-token' ) );
-
-		$output = ( new Settings() )->sanitize( array( 'secret_key' => '' ) );
-
-		$this->assertSame( 'kept-token', $output['secret_key'] ?? null );
-	}
-
-	public function test_sanitize_preserves_stored_token_on_whitespace_submit(): void {
-		update_option( Settings::OPTION_NAME, array( 'secret_key' => 'kept-token' ) );
-
-		$output = ( new Settings() )->sanitize( array( 'secret_key' => "   \t\n" ) );
-
-		$this->assertSame( 'kept-token', $output['secret_key'] ?? null );
-	}
-
-	public function test_sanitize_replaces_stored_token_when_new_value_submitted(): void {
-		update_option( Settings::OPTION_NAME, array( 'secret_key' => 'old-token' ) );
-
-		$output = ( new Settings() )->sanitize( array( 'secret_key' => 'new-token' ) );
-
-		$this->assertSame( 'new-token', $output['secret_key'] ?? null );
+		$this->assertSame( 'paste', $output['secret_key'] ?? null );
 	}
 
 	/* ------------------------------------------------------------------

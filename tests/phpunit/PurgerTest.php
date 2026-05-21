@@ -73,7 +73,7 @@ class PurgerTest extends WP_UnitTestCase {
 
 		$this->assertTrue( $result['ok'] ?? false );
 		$this->assertSame(
-			sprintf( 'Purged %s from smoxy Proxy.', $url ),
+			sprintf( 'Purged %s from smoxy.', $url ),
 			$result['message'] ?? null,
 			'Message should be URL-centric regardless of underlying mechanism'
 		);
