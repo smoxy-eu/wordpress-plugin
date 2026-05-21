@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning 2.0.0](https://semver.org/spec/
 
 ## [Unreleased]
 
+## [1.2.1] - 2026-05-21
+
+No functional changes — version bump to exercise the new in-WordPress update flow against an existing v1.2.0 install.
+
 ## [1.2.0] - 2026-05-21
 
 ### Added
@@ -64,7 +68,8 @@ and this project adheres to [Semantic Versioning 2.0.0](https://semver.org/spec/
 - GitHub Actions workflows: `lint`, `phpunit`, `plugin-check`, `smoke`, and `release` (which builds zip + tar.gz on `v*` tag push and publishes a GitHub Release).
 - `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md`, `CHANGELOG.md`.
 
-[Unreleased]: https://github.com/smoxy-eu/wordpress-plugin/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/smoxy-eu/wordpress-plugin/compare/v1.2.1...HEAD
+[1.2.1]: https://github.com/smoxy-eu/wordpress-plugin/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/smoxy-eu/wordpress-plugin/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/smoxy-eu/wordpress-plugin/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/smoxy-eu/wordpress-plugin/compare/v1.0.0...v1.0.1
