@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning 2.0.0](https://semver.org/spec/
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-05-21
+
+### Changed
+
+- Mark plugin as tested up to WordPress 7.0 (verified locally against the WP 7.0 PHPUnit test library).
+
 ## [1.0.0] - 2026-05-19
 
 ### Added
@@ -21,5 +27,6 @@ and this project adheres to [Semantic Versioning 2.0.0](https://semver.org/spec/
 - GitHub Actions workflows: `lint`, `phpunit`, `plugin-check`, `smoke`, and `release` (which builds zip + tar.gz on `v*` tag push and publishes a GitHub Release).
 - `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md`, `CHANGELOG.md`.
 
-[Unreleased]: https://github.com/smoxy-eu/wordpress-plugin/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/smoxy-eu/wordpress-plugin/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/smoxy-eu/wordpress-plugin/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/smoxy-eu/wordpress-plugin/releases/tag/v1.0.0

@@ -5,7 +5,7 @@
  * Description:       Connects WordPress to the smoxy Proxy cache service — purges and invalidates cached pages on the edge when content changes.
  * Version:           1.0.0
  * Requires at least: 6.0
- * Tested up to:      6.9
+ * Tested up to:      7.0
  * Requires PHP:      8.0
  * Author:            smoxy
  * Author URI:        https://www.smoxy.eu
