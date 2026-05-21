@@ -1,6 +1,6 @@
 <?php
 /**
- * Uninstall handler for smoxy Proxy.
+ * Uninstall handler for smoxy.
  *
  * Runs when the plugin is deleted from the Plugins screen. Removes options
  * and transients created by the plugin so no residue is left behind.

@@ -58,7 +58,7 @@ class Purger {
 			if ( ! empty( $result['ok'] ) ) {
 				$result['message'] = sprintf(
 					/* translators: %s: URL */
-					__( 'Purged %s from smoxy Proxy.', 'smoxy' ),
+					__( 'Purged %s from smoxy.', 'smoxy' ),
 					$url
 				);
 			}
@@ -109,7 +109,7 @@ class Purger {
 			'ok'      => true,
 			'message' => sprintf(
 			/* translators: %s: URL */
-				__( 'Purged %s from smoxy Proxy.', 'smoxy' ),
+				__( 'Purged %s from smoxy.', 'smoxy' ),
 				$url
 			),
 		);
@@ -138,7 +138,7 @@ class Purger {
 
 	/**
 	 * True when $url's host matches this site's home_url() host. External
-	 * hosts are rejected because smoxy Proxy only fronts this origin.
+	 * hosts are rejected because smoxy only fronts this origin.
 	 */
 	private function is_internal_url( string $url ): bool {
 		$url_host  = strtolower( (string) wp_parse_url( $url, PHP_URL_HOST ) );

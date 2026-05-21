@@ -1,4 +1,4 @@
-# smoxy Proxy for WordPress
+# smoxy for WordPress
 
 [![Lint](https://github.com/smoxy-eu/wordpress-plugin/actions/workflows/lint.yml/badge.svg)](https://github.com/smoxy-eu/wordpress-plugin/actions/workflows/lint.yml)
 [![PHPUnit](https://github.com/smoxy-eu/wordpress-plugin/actions/workflows/phpunit.yml/badge.svg)](https://github.com/smoxy-eu/wordpress-plugin/actions/workflows/phpunit.yml)
@@ -9,7 +9,7 @@
 [![WordPress 6.0+](https://img.shields.io/badge/WordPress-6.0%2B-blue.svg)](https://wordpress.org/)
 [![PHP 8.0+](https://img.shields.io/badge/PHP-8.0%2B-777bb4.svg)](https://www.php.net/)
 
-Connects WordPress to [smoxy Proxy](https://www.smoxy.eu). Your pages stay fast at the edge, and your content stays fresh — the plugin keeps smoxy Proxy in sync with your site automatically.
+Connects WordPress to [smoxy](https://www.smoxy.eu). Your pages stay fast at the edge, and your content stays fresh — the plugin keeps smoxy in sync with your site automatically.
 
 - **Website:** <https://www.smoxy.eu>
 - **Documentation:** <https://docs.smoxy.eu>
@@ -26,10 +26,10 @@ Learn more at [smoxy.eu](https://www.smoxy.eu) or read the full product docs at 
 
 ## What this plugin does
 
-- **Keeps the edge cache fresh.** When you publish, edit, or delete content — or change menus, widgets, your theme or site settings — the affected pages are purged from smoxy Proxy automatically.
+- **Keeps the edge cache fresh.** When you publish, edit, or delete content — or change menus, widgets, your theme or site settings — the affected pages are purged from smoxy automatically.
 - **Gives you one-click control.**
-  - A **Purge smoxy Proxy cache** button is available right in the WordPress admin bar.
-  - A dedicated **smoxy Proxy** menu provides a settings page with manual purge tools.
+  - A **Purge smoxy cache** button is available right in the WordPress admin bar.
+  - A dedicated **smoxy** menu provides a settings page with manual purge tools.
 - **Purges individual pages or assets on demand.** Clear a specific page, image, JS, CSS or other file by its URL.
 
 ## Features
@@ -51,8 +51,8 @@ Learn more at [smoxy.eu](https://www.smoxy.eu) or read the full product docs at 
 
 1. Download the latest `smoxy-X.Y.Z.zip` from the [Releases page](https://github.com/smoxy-eu/wordpress-plugin/releases).
 2. In WordPress, go to **Plugins → Add New → Upload Plugin** and upload the zip.
-3. Activate **smoxy Proxy**.
-4. Open **smoxy Proxy → Settings** (cloud icon in the sidebar), paste your **secret token**, and save.
+3. Activate **smoxy**.
+4. Open **smoxy → Settings** (cloud icon in the sidebar), paste your **secret token**, and save.
 
 ### From source (for development)
 
@@ -63,7 +63,7 @@ cd /path/to/wp-content/plugins/smoxy
 composer install
 ```
 
-Then activate **smoxy Proxy** from the WordPress admin.
+Then activate **smoxy** from the WordPress admin.
 
 ### Getting your secret token
 
@@ -73,16 +73,16 @@ Log in to the [smoxy hub](https://hub.smoxy.eu) — or create a **free account**
 
 ### Purge everything
 
-- **From the admin bar:** click **Purge smoxy Proxy cache** at the top of any admin or front-end page.
-- **From the settings page:** open **smoxy Proxy → Settings** and click **Purge all cache**.
+- **From the admin bar:** click **Purge smoxy cache** at the top of any admin or front-end page.
+- **From the settings page:** open **smoxy → Settings** and click **Purge all cache**.
 
 ### Purge a single URL
 
-On the Settings page, enter a URL in the **Purge by URL** box and click **Purge URL**. This works for any cacheable asset: a blog post, a product image, a CSS file, a font — anything served through smoxy Proxy.
+On the Settings page, enter a URL in the **Purge by URL** box and click **Purge URL**. This works for any cacheable asset: a blog post, a product image, a CSS file, a font — anything served through smoxy.
 
 ### Automatic purges
 
-You don't need to click anything for normal editing. The plugin watches for changes in WordPress and clears the right pages from smoxy Proxy for you — including posts, comments, categories, menus, widgets, theme changes, and site settings.
+You don't need to click anything for normal editing. The plugin watches for changes in WordPress and clears the right pages from smoxy for you — including posts, comments, categories, menus, widgets, theme changes, and site settings.
 
 ## Development
 

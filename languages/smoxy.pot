@@ -2,7 +2,7 @@
 # This file is distributed under the MIT license.
 msgid ""
 msgstr ""
-"Project-Id-Version: smoxy Proxy 0.0.1\n"
+"Project-Id-Version: smoxy 0.0.1\n"
 "Report-Msgid-Bugs-To: https://www.smoxy.eu\n"
 "POT-Creation-Date: 2026-05-19T07:47:45+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
@@ -19,7 +19,7 @@ msgstr ""
 #: smoxy.php
 #: src/Settings.php:61
 #: src/Settings.php:62
-msgid "smoxy Proxy"
+msgid "smoxy"
 msgstr ""
 
 #. Plugin URI of the plugin
@@ -30,7 +30,7 @@ msgstr ""
 
 #. Description of the plugin
 #: smoxy.php
-msgid "Connects WordPress to the smoxy Proxy cache service — purges and invalidates cached pages on the edge when content changes."
+msgid "Connects WordPress to the smoxy cache service — purges and invalidates cached pages on the edge when content changes."
 msgstr ""
 
 #. Author of the plugin
@@ -59,7 +59,7 @@ msgstr ""
 #: src/Purger.php:53
 #: src/Purger.php:104
 #, php-format
-msgid "Purged %s from smoxy Proxy."
+msgid "Purged %s from smoxy."
 msgstr ""
 
 #: src/Purger.php:64
@@ -90,20 +90,20 @@ msgid "smoxy returned HTTP %d."
 msgstr ""
 
 #: src/Settings.php:44
-msgid "Purge smoxy Proxy cache"
+msgid "Purge smoxy cache"
 msgstr ""
 
 #: src/Settings.php:47
-msgid "Purge all pages from smoxy Proxy"
+msgid "Purge all pages from smoxy"
 msgstr ""
 
 #: src/Settings.php:48
-msgid "Purge all cached pages from smoxy Proxy?"
+msgid "Purge all cached pages from smoxy?"
 msgstr ""
 
 #: src/Settings.php:72
 #: src/Settings.php:162
-msgid "smoxy Proxy Settings"
+msgid "smoxy Settings"
 msgstr ""
 
 #: src/Settings.php:95
@@ -111,7 +111,7 @@ msgid "API credentials"
 msgstr ""
 
 #: src/Settings.php:97
-msgid "Credentials used when calling the smoxy Proxy cache service."
+msgid "Credentials used when calling the smoxy cache service."
 msgstr ""
 
 #. translators: 1: link to the smoxy hub, 2: bold "free account" text.
@@ -181,7 +181,7 @@ msgid "Purge all"
 msgstr ""
 
 #: src/Settings.php:195
-msgid "Remove all cached pages from smoxy Proxy. The next request for each page will be regenerated."
+msgid "Remove all cached pages from smoxy. The next request for each page will be regenerated."
 msgstr ""
 
 #: src/Settings.php:199

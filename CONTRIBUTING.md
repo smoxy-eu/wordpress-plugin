@@ -1,6 +1,6 @@
-# Contributing to smoxy Proxy
+# Contributing to smoxy
 
-Thanks for your interest in improving the smoxy Proxy WordPress plugin! This document explains how to set up a local development environment, the conventions we follow, and how changes get shipped.
+Thanks for your interest in improving the smoxy WordPress plugin! This document explains how to set up a local development environment, the conventions we follow, and how changes get shipped.
 
 By participating you agree to abide by our [Code of Conduct](CODE_OF_CONDUCT.md).
 

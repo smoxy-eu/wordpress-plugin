@@ -48,6 +48,16 @@ lint: ## Run phpstan + phpcs.
 	vendor/bin/phpstan analyse --no-progress
 	vendor/bin/phpcs -q --report=full
 
+.PHONY: build-dev
+build-dev: ## Build an upload-ready dev zip in dist/ (mirrors release.yml).
+	@rm -rf build dist
+	@mkdir -p build/smoxy dist
+	@rsync -a --exclude-from=.distignore --exclude='.claude' ./ build/smoxy/
+	@STAMP="$$(date +%Y%m%d-%H%M)"; \
+	ZIP="smoxy-$(CURRENT_VERSION)-dev-$$STAMP.zip"; \
+	( cd build && zip -qr "../dist/$$ZIP" smoxy ); \
+	echo "Built dist/$$ZIP"
+
 ##@ Release
 
 .PHONY: release-patch
