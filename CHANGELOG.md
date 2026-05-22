@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning 2.0.0](https://semver.org/spec/
 
 ## [Unreleased]
 
+### Added
+
+- Attachment-driven edge-cache invalidation: when an image is uploaded, regenerated, edited, or deleted, every known size variant (full image, pre-`-scaled` original, and each entry under `metadata['sizes']`) is BAN'd at the edge. Listens to `wp_update_attachment_metadata` and `delete_attachment`, deduplicates URLs across the request, and dispatches at `shutdown`. Non-image attachments are skipped.
+- `Purger::purge_urls( array $urls )` — parallel BAN dispatcher that issues all URL invalidations in one batch via the WordPress-bundled `Requests::request_multiple()` (curl_multi under the hood), instead of looping `wp_remote_request`. Exposes a `smoxy_pre_purge_urls` filter as a test/extension seam.
+- Fourth managed conditional rule "WordPress: cache images on URI only" (`RuleDefinitions::KEY_IMAGES`). Matches requests whose URI ends in `.png`, `.jpeg`, `.jpg`, `.gif`, `.webp`, `.avif`, or `.svg`, narrows the cache key to URI only via the v2 `vary_cache` action (`host_vary_enabled=false`, `cookie_vary_params=[]`), and sets `stop=true` so downstream conditional rules are skipped for image responses. Pinned to position 1 on the zone via the dedicated `/conditional-rule/{id}/position` PATCH endpoint (the hub assigns positions sequentially on create and ignores `position` in the create payload); the existing WordPress bypass rules shift to positions 2–4.
+- `Client::patch_conditional_rule_position()` for the position endpoint, and a `reconcile_position()` step in `Bootstrap::ensure_rules()` and the per-rule "fix" action in `Settings` that aligns rules with a declared `expected_position` after create or patch.
+
+### Changed
+
+- `make install` and `make build-dev` now run `composer install` inside a `composer:2` Docker container instead of on the host. The container is bind-mounted to the project directory only, runs as the host UID/GID, and pins `COMPOSER_HOME`/`COMPOSER_CACHE_DIR` inside the container — so a malicious package's post-install scripts cannot reach the host shell or read host secrets.
+- `Audit::find_drift()` now also compares the `stop` flag and (when the rule definition declares `expected_position`) the rule's position between the expected payload and the remote rule, so the images rule is flagged as drifted if either is changed on the hub. Rules without an `expected_position` (the three bypass rules) keep the previous behavior — users may reorder them freely without triggering drift alerts.
+- `Audit` report now includes `remote_position` per rule so the settings panel and bootstrap can pin a rule's slot without re-listing.
+
 ## [1.0.1] - 2026-05-21
 
 No functional changes — version bump to exercise the in-WordPress update flow against an existing v1.0.0 install.

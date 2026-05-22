@@ -173,6 +173,24 @@ class Client {
 	}
 
 	/**
+	 * Reorder a conditional rule. The hub assigns positions sequentially on
+	 * create and ignores `position` in the create/patch payloads — the only
+	 * way to move a rule is this dedicated endpoint. Positions are 1-based;
+	 * out-of-range values are clamped by the server (per PositionProcessor).
+	 *
+	 * @return array{ok:bool, status:int, body:array<int|string,mixed>, error:?string}
+	 */
+	public function patch_conditional_rule_position( int $zone_id, int $rule_id, int $position ): array {
+		return $this->request(
+			'PATCH',
+			'/api/v2/delivery/zone/' . $zone_id . '/conditional-rule/' . $rule_id . '/position',
+			array(),
+			array( 'position' => $position ),
+			'application/merge-patch+json'
+		);
+	}
+
+	/**
 	 * @return array{ok:bool, status:int, body:array<int|string,mixed>, error:?string}
 	 */
 	public function delete_conditional_rule( int $zone_id, int $rule_id ): array {

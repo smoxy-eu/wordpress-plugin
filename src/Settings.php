@@ -879,16 +879,19 @@ class Settings {
 			$this->redirect_back();
 		}
 
-		$client    = new Client( self::get_api_token() );
-		$audit     = new Audit( $client );
-		$report    = $audit->audit_zone( $zone_id );
-		$status    = $report['ok'] ? ( $report['rules'][ $key ]['status'] ?? Audit::STATUS_MISSING ) : Audit::STATUS_MISSING;
-		$remote_id = $report['ok'] ? ( $report['rules'][ $key ]['remote_id'] ?? null ) : null;
+		$client          = new Client( self::get_api_token() );
+		$audit           = new Audit( $client );
+		$report          = $audit->audit_zone( $zone_id );
+		$status          = $report['ok'] ? ( $report['rules'][ $key ]['status'] ?? Audit::STATUS_MISSING ) : Audit::STATUS_MISSING;
+		$remote_id       = $report['ok'] ? ( $report['rules'][ $key ]['remote_id'] ?? null ) : null;
+		$remote_position = $report['ok'] ? ( $report['rules'][ $key ]['remote_position'] ?? null ) : null;
 
 		if ( Audit::STATUS_DRIFTED === $status && null !== $remote_id ) {
 			$result = $client->patch_conditional_rule( $zone_id, (int) $remote_id, $all[ $key ]['payload'] );
 		} else {
-			$result = $client->create_conditional_rule( $zone_id, $all[ $key ]['payload'] );
+			$result          = $client->create_conditional_rule( $zone_id, $all[ $key ]['payload'] );
+			$remote_id       = isset( $result['body']['id'] ) && is_numeric( $result['body']['id'] ) ? (int) $result['body']['id'] : $remote_id;
+			$remote_position = isset( $result['body']['position'] ) && is_numeric( $result['body']['position'] ) ? (int) $result['body']['position'] : $remote_position;
 		}
 
 		if ( ! $result['ok'] ) {
@@ -899,6 +902,20 @@ class Settings {
 				)
 			);
 			$this->redirect_back();
+		}
+
+		$expected_position = $all[ $key ]['expected_position'] ?? null;
+		if ( null !== $expected_position && null !== $remote_id && $expected_position !== $remote_position ) {
+			$move = $client->patch_conditional_rule_position( $zone_id, (int) $remote_id, (int) $expected_position );
+			if ( ! $move['ok'] ) {
+				$this->flash(
+					array(
+						'ok'      => false,
+						'message' => $move['error'] ?? __( 'Could not reorder the rule.', 'smoxy' ),
+					)
+				);
+				$this->redirect_back();
+			}
 		}
 
 		$this->flash(

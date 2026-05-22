@@ -263,7 +263,10 @@ class Bootstrap {
 		}
 
 		foreach ( RuleDefinitions::all() as $key => $expected ) {
-			$status = $report['rules'][ $key ]['status'] ?? Audit::STATUS_MISSING;
+			$status          = $report['rules'][ $key ]['status'] ?? Audit::STATUS_MISSING;
+			$remote_id       = $report['rules'][ $key ]['remote_id'] ?? null;
+			$remote_position = $report['rules'][ $key ]['remote_position'] ?? null;
+
 			if ( Audit::STATUS_OK === $status ) {
 				$this->log(
 					sprintf(
@@ -272,10 +275,7 @@ class Bootstrap {
 						$expected['name']
 					)
 				);
-				continue;
-			}
-			if ( Audit::STATUS_DRIFTED === $status ) {
-				$remote_id = $report['rules'][ $key ]['remote_id'] ?? null;
+			} elseif ( Audit::STATUS_DRIFTED === $status ) {
 				if ( null === $remote_id ) {
 					$this->log(
 						sprintf(
@@ -305,29 +305,89 @@ class Bootstrap {
 						$expected['name']
 					)
 				);
-				continue;
+			} else {
+				$create = $this->client->create_conditional_rule( $zone_id, $expected['payload'] );
+				if ( ! $create['ok'] ) {
+					return array(
+						'ok'      => false,
+						'message' => sprintf(
+							/* translators: 1: rule name, 2: error message */
+							__( 'Could not create conditional rule "%1$s": %2$s', 'smoxy' ),
+							$expected['name'],
+							$create['error'] ?? ''
+						),
+					);
+				}
+				$this->log(
+					sprintf(
+					/* translators: %s: rule name */
+						__( 'Created conditional rule "%s".', 'smoxy' ),
+						$expected['name']
+					)
+				);
+				$remote_id       = $this->extract_id( $create['body'] );
+				$remote_position = isset( $create['body']['position'] ) && is_numeric( $create['body']['position'] )
+					? (int) $create['body']['position']
+					: null;
 			}
 
-			$create = $this->client->create_conditional_rule( $zone_id, $expected['payload'] );
-			if ( ! $create['ok'] ) {
-				return array(
-					'ok'      => false,
-					'message' => sprintf(
-						/* translators: 1: rule name, 2: error message */
-						__( 'Could not create conditional rule "%1$s": %2$s', 'smoxy' ),
-						$expected['name'],
-						$create['error'] ?? ''
-					),
-				);
+			$reconcile = $this->reconcile_position( $zone_id, $expected, $remote_id, $remote_position );
+			if ( ! $reconcile['ok'] ) {
+				return $reconcile;
 			}
-			$this->log(
-				sprintf(
-				/* translators: %s: rule name */
-					__( 'Created conditional rule "%s".', 'smoxy' ),
-					$expected['name']
-				)
+		}
+
+		return array(
+			'ok'      => true,
+			'message' => '',
+		);
+	}
+
+	/**
+	 * Move a rule to its declared position. No-op when the rule has no
+	 * expected_position, the position is already correct, or we don't know
+	 * the rule's current id (a drifted rule with no id was already logged
+	 * and skipped upstream).
+	 *
+	 * @param array{name:string, key:string, description:string, expected_position:?int, payload:array<string,mixed>} $expected
+	 * @return array{ok:bool, message:string}
+	 */
+	private function reconcile_position( int $zone_id, array $expected, ?int $remote_id, ?int $remote_position ): array {
+		$expected_position = $expected['expected_position'] ?? null;
+		if ( null === $expected_position || null === $remote_id ) {
+			return array(
+				'ok'      => true,
+				'message' => '',
 			);
 		}
+		if ( null !== $remote_position && $expected_position === $remote_position ) {
+			return array(
+				'ok'      => true,
+				'message' => '',
+			);
+		}
+
+		$move = $this->client->patch_conditional_rule_position( $zone_id, $remote_id, $expected_position );
+		if ( ! $move['ok'] ) {
+			return array(
+				'ok'      => false,
+				'message' => sprintf(
+					/* translators: 1: rule name, 2: expected position, 3: error message */
+					__( 'Could not move conditional rule "%1$s" to position %2$d: %3$s', 'smoxy' ),
+					$expected['name'],
+					$expected_position,
+					$move['error'] ?? ''
+				),
+			);
+		}
+		$this->log(
+			sprintf(
+				/* translators: 1: rule name, 2: position number */
+				__( 'Moved conditional rule "%1$s" to position %2$d.', 'smoxy' ),
+				$expected['name'],
+				$expected_position
+			)
+		);
 
 		return array(
 			'ok'      => true,
