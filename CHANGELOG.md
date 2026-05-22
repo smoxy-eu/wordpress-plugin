@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning 2.0.0](https://semver.org/spec/
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-05-22
+
 ### Added
 
 - Attachment-driven edge-cache invalidation: when an image is uploaded, regenerated, edited, or deleted, every known size variant (full image, pre-`-scaled` original, and each entry under `metadata['sizes']`) is BAN'd at the edge. Listens to `wp_update_attachment_metadata` and `delete_attachment`, deduplicates URLs across the request, and dispatches at `shutdown`. Non-image attachments are skipped.
@@ -19,6 +21,10 @@ and this project adheres to [Semantic Versioning 2.0.0](https://semver.org/spec/
 - `make install` and `make build-dev` now run `composer install` inside a `composer:2` Docker container instead of on the host. The container is bind-mounted to the project directory only, runs as the host UID/GID, and pins `COMPOSER_HOME`/`COMPOSER_CACHE_DIR` inside the container — so a malicious package's post-install scripts cannot reach the host shell or read host secrets.
 - `Audit::find_drift()` now also compares the `stop` flag and (when the rule definition declares `expected_position`) the rule's position between the expected payload and the remote rule, so the images rule is flagged as drifted if either is changed on the hub. Rules without an `expected_position` (the three bypass rules) keep the previous behavior — users may reorder them freely without triggering drift alerts.
 - `Audit` report now includes `remote_position` per rule so the settings panel and bootstrap can pin a rule's slot without re-listing.
+
+### Docs
+
+- Rewrote `README.md` and `readme.txt` to lead with the WooCommerce value proposition (cart/checkout always live, variant-price-edit handling, stock invalidation) and the three smoxy pillars — edge caching, image optimization (WebP/AVIF/SSIM), and the WAF/security layer. Added the headline performance numbers and customer references from smoxy.eu.
 
 ## [1.0.1] - 2026-05-21
 
@@ -46,6 +52,7 @@ Initial public release. Connects WordPress to the [smoxy](https://www.smoxy.eu) 
 - GitHub Actions workflows: `lint`, `phpunit`, `plugin-check`, `smoke`, and `release` (builds zip + tar.gz on `v*` tag push and publishes a GitHub Release).
 - `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md`, `CHANGELOG.md`.
 
-[Unreleased]: https://github.com/smoxy-eu/wordpress-plugin/compare/v1.0.1...HEAD
+[Unreleased]: https://github.com/smoxy-eu/wordpress-plugin/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/smoxy-eu/wordpress-plugin/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/smoxy-eu/wordpress-plugin/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/smoxy-eu/wordpress-plugin/releases/tag/v1.0.0
