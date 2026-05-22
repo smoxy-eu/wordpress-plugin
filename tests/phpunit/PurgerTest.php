@@ -235,6 +235,99 @@ class PurgerTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( '500', (string) ( $result['message'] ?? '' ) );
 	}
 
+	/* ------------------------------------------------------------------
+	 * purge_urls (parallel BAN)
+	 * ------------------------------------------------------------------ */
+
+	public function test_purge_urls_empty_input_is_a_noop_success(): void {
+		$result = ( new Purger() )->purge_urls( array() );
+
+		$this->assertTrue( $result['ok'] ?? false );
+		$this->assertCount( 0, $this->http_calls );
+	}
+
+	public function test_purge_urls_drops_external_and_invalid_entries(): void {
+		$captured = null;
+		add_filter(
+			'smoxy_pre_purge_urls',
+			static function ( $preempt, array $urls ) use ( &$captured ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter
+				$captured = $urls;
+				$out      = array();
+				foreach ( $urls as $url ) {
+					$out[ $url ] = array(
+						'ok'      => true,
+						'message' => '',
+					);
+				}
+				return $out;
+			},
+			10,
+			2
+		);
+
+		$internal = home_url( '/wp-content/uploads/2024/01/photo.jpg' );
+
+		$result = ( new Purger() )->purge_urls(
+			array(
+				$internal,
+				'https://example.com/external.jpg',
+				$internal, // dupe
+			)
+		);
+
+		$this->assertTrue( $result['ok'] ?? false );
+		$this->assertSame( array( $internal ), $captured, 'External and duplicate URLs must be filtered before dispatch' );
+	}
+
+	public function test_purge_urls_errors_when_secret_token_missing(): void {
+		delete_option( Settings::OPTION_NAME );
+
+		$saw_filter = false;
+		add_filter(
+			'smoxy_pre_purge_urls',
+			static function ( $preempt ) use ( &$saw_filter ) {
+				$saw_filter = true;
+				return $preempt;
+			}
+		);
+
+		$result = ( new Purger() )->purge_urls( array( home_url( '/wp-content/uploads/x.jpg' ) ) );
+
+		$this->assertFalse( $result['ok'] ?? null );
+		$this->assertFalse( $saw_filter, 'Token check must short-circuit before dispatch (and thus before the pre filter)' );
+	}
+
+	public function test_purge_urls_aggregates_per_url_results_from_filter(): void {
+		$internal_a = home_url( '/wp-content/uploads/a.jpg' );
+		$internal_b = home_url( '/wp-content/uploads/b.jpg' );
+
+		add_filter(
+			'smoxy_pre_purge_urls',
+			static function ( $preempt, array $urls ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter
+				$out = array();
+				foreach ( $urls as $i => $url ) {
+					$out[ $url ] = 0 === $i
+						? array(
+							'ok'      => true,
+							'message' => 'fine',
+						)
+						: array(
+							'ok'      => false,
+							'message' => 'boom',
+						);
+				}
+				return $out;
+			},
+			10,
+			2
+		);
+
+		$result = ( new Purger() )->purge_urls( array( $internal_a, $internal_b ) );
+
+		$this->assertFalse( $result['ok'] ?? null );
+		$this->assertStringContainsString( $internal_b, (string) ( $result['message'] ?? '' ) );
+	}
+
 	/**
 	 * Build a fake wp_remote_request() response array for the stubbed filter.
 	 *

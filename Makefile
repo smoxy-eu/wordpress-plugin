@@ -22,6 +22,19 @@ SHELL := /usr/bin/env bash
 
 CURRENT_VERSION := $(shell awk '/^[[:space:]]*\*[[:space:]]*Version:/ { print $$3; exit }' smoxy.php)
 
+# Composer runs inside a container so a malicious package's post-install
+# scripts cannot reach the host shell or read host secrets — only the
+# project directory mounted at /app is visible. The container runs as the
+# host UID/GID so files written into vendor/ stay owned by the host user.
+COMPOSER_IMAGE := composer:2
+COMPOSER := docker run --rm \
+	-v "$(CURDIR)":/app \
+	-w /app \
+	-u $$(id -u):$$(id -g) \
+	-e COMPOSER_HOME=/tmp/composer \
+	-e COMPOSER_CACHE_DIR=/tmp/composer-cache \
+	$(COMPOSER_IMAGE) composer
+
 ##@ General
 
 .PHONY: help
@@ -36,8 +49,8 @@ help: ## Show this help.
 ##@ Development
 
 .PHONY: install
-install: ## Install composer dependencies.
-	composer install --no-interaction --prefer-dist
+install: ## Install composer dependencies (runs composer in Docker).
+	$(COMPOSER) install --no-interaction --prefer-dist
 
 .PHONY: test
 test: ## Run PHPUnit (requires `composer install` and a configured WP test env).
@@ -49,12 +62,12 @@ lint: ## Run phpstan + phpcs.
 	vendor/bin/phpcs -q --report=full
 
 .PHONY: build-dev
-build-dev: ## Build an upload-ready dev zip in dist/ (mirrors release.yml).
+build-dev: ## Build an upload-ready dev zip in dist/ (mirrors release.yml; composer runs in Docker).
 	@rm -rf build dist
 	@mkdir -p build/smoxy dist
-	composer install --no-dev --no-interaction --optimize-autoloader --prefer-dist
+	$(COMPOSER) install --no-dev --no-interaction --optimize-autoloader --prefer-dist
 	@rsync -a --exclude-from=.distignore --exclude='.claude' ./ build/smoxy/
-	composer install --no-interaction --prefer-dist
+	$(COMPOSER) install --no-interaction --prefer-dist
 	@STAMP="$$(date +%Y%m%d-%H%M)"; \
 	ZIP="smoxy-$(CURRENT_VERSION)-dev-$$STAMP.zip"; \
 	( cd build && zip -qr "../dist/$$ZIP" smoxy ); \

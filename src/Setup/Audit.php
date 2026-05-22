@@ -26,7 +26,7 @@ class Audit {
 	}
 
 	/**
-	 * @return array{ok:bool, error:?string, rules:array<string, array{key:string, expected_name:string, status:string, remote_id:?int, diff:?string}>}
+	 * @return array{ok:bool, error:?string, rules:array<string, array{key:string, expected_name:string, status:string, remote_id:?int, remote_position:?int, diff:?string}>}
 	 */
 	public function audit_zone( int $zone_id ): array {
 		$response = $this->client->list_conditional_rules( $zone_id );
@@ -60,32 +60,36 @@ class Audit {
 	}
 
 	/**
-	 * @param array{name:string, key:string, description:string, payload:array<string,mixed>} $expected
+	 * @param array{name:string, key:string, description:string, expected_position:?int, payload:array<string,mixed>} $expected
 	 * @param array<string,mixed>|null $remote
-	 * @return array{key:string, expected_name:string, status:string, remote_id:?int, diff:?string}
+	 * @return array{key:string, expected_name:string, status:string, remote_id:?int, remote_position:?int, diff:?string}
 	 */
 	private function compare( string $key, array $expected, ?array $remote ): array {
 		if ( null === $remote ) {
 			return array(
-				'key'           => $key,
-				'expected_name' => $expected['name'],
-				'status'        => self::STATUS_MISSING,
-				'remote_id'     => null,
-				'diff'          => null,
+				'key'             => $key,
+				'expected_name'   => $expected['name'],
+				'status'          => self::STATUS_MISSING,
+				'remote_id'       => null,
+				'remote_position' => null,
+				'diff'            => null,
 			);
 		}
 
-		$remote_id = isset( $remote['id'] ) && is_numeric( $remote['id'] ) ? (int) $remote['id'] : null;
+		$remote_id       = isset( $remote['id'] ) && is_numeric( $remote['id'] ) ? (int) $remote['id'] : null;
+		$remote_position = isset( $remote['position'] ) && is_numeric( $remote['position'] ) ? (int) $remote['position'] : null;
 
-		$expected_payload = $expected['payload'];
-		$drift            = $this->find_drift( $expected_payload, $remote );
+		$expected_payload  = $expected['payload'];
+		$expected_position = $expected['expected_position'] ?? null;
+		$drift             = $this->find_drift( $expected_payload, $remote, $expected_position, $remote_position );
 
 		return array(
-			'key'           => $key,
-			'expected_name' => $expected['name'],
-			'status'        => null === $drift ? self::STATUS_OK : self::STATUS_DRIFTED,
-			'remote_id'     => $remote_id,
-			'diff'          => $drift,
+			'key'             => $key,
+			'expected_name'   => $expected['name'],
+			'status'          => null === $drift ? self::STATUS_OK : self::STATUS_DRIFTED,
+			'remote_id'       => $remote_id,
+			'remote_position' => $remote_position,
+			'diff'            => $drift,
 		);
 	}
 
@@ -97,9 +101,23 @@ class Audit {
 	 * @param array<string,mixed> $expected
 	 * @param array<string,mixed> $remote
 	 */
-	private function find_drift( array $expected, array $remote ): ?string {
+	private function find_drift( array $expected, array $remote, ?int $expected_position = null, ?int $remote_position = null ): ?string {
 		if ( $this->normalize_bool( $remote['enabled'] ?? null ) !== ( $expected['enabled'] ?? null ) ) {
 			return __( 'Rule is disabled on the zone.', 'smoxy' );
+		}
+
+		// Stop flag matters for the images rule, which depends on stop=true to
+		// short-circuit downstream rules. Comparing it for every rule keeps the
+		// drift check uniform.
+		if ( $this->normalize_bool( $remote['stop'] ?? null ) !== (bool) ( $expected['stop'] ?? false ) ) {
+			return __( 'Stop flag differs from the plugin default.', 'smoxy' );
+		}
+
+		// Only check position drift for rules that declare an expected slot
+		// (the images rule does; the bypass rules don't, since users may
+		// reorder them around their own custom rules).
+		if ( null !== $expected_position && null !== $remote_position && $expected_position !== $remote_position ) {
+			return __( 'Position differs from the plugin default.', 'smoxy' );
 		}
 
 		$expected_expr = $this->normalize_expression( $expected['expressions'] ?? null );

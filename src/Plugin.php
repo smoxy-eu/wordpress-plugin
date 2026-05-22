@@ -11,6 +11,7 @@ class Plugin {
 		( new Settings() )->register();
 		( new CacheTags() )->register();
 		( new EventBus() )->register();
+		( new Attachments() )->register();
 		( new WooCommerce() )->register();
 
 		add_filter(
