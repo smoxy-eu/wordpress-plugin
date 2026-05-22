@@ -3,7 +3,7 @@
  * Plugin Name:       smoxy
  * Plugin URI:        https://www.smoxy.eu
  * Description:       Connects WordPress to the smoxy cache service — purges and invalidates cached pages on the edge when content changes.
- * Version:           1.0.1
+ * Version:           1.1.0
  * Requires at least: 6.0
  * Tested up to:      7.0
  * Requires PHP:      8.0
@@ -17,7 +17,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'SMOXY_VERSION', '1.0.1' );
+define( 'SMOXY_VERSION', '1.1.0' );
 define( 'SMOXY_PLUGIN_FILE', __FILE__ );
 define( 'SMOXY_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'SMOXY_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
