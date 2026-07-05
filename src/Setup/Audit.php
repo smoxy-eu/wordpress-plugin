@@ -7,7 +7,7 @@ use Smoxy\WP\Api\Client;
 defined( 'ABSPATH' ) || exit;
 
 /**
- * Compares the expected conditional rules (from RuleDefinitions) against
+ * Compares the expected configuration rules (from RuleDefinitions) against
  * what's actually configured on the bound zone, surfacing missing rules
  * and drift so the settings page can show a status report and offer a
  * one-click fix.
@@ -26,10 +26,10 @@ class Audit {
 	}
 
 	/**
-	 * @return array{ok:bool, error:?string, rules:array<string, array{key:string, expected_name:string, status:string, remote_id:?int, remote_position:?int, diff:?string}>}
+	 * @return array{ok:bool, error:?string, rules:array<string, array{key:string, expected_name:string, status:string, remote_id:?string, remote_order:?int, diff:?string}>}
 	 */
 	public function audit_zone( int $zone_id ): array {
-		$response = $this->client->list_conditional_rules( $zone_id );
+		$response = $this->client->list_configuration_rules( $zone_id );
 		if ( ! $response['ok'] ) {
 			return array(
 				'ok'    => false,
@@ -60,36 +60,36 @@ class Audit {
 	}
 
 	/**
-	 * @param array{name:string, key:string, description:string, expected_position:?int, payload:array<string,mixed>} $expected
+	 * @param array{name:string, key:string, description:string, expected_order:?int, payload:array<string,mixed>} $expected
 	 * @param array<string,mixed>|null $remote
-	 * @return array{key:string, expected_name:string, status:string, remote_id:?int, remote_position:?int, diff:?string}
+	 * @return array{key:string, expected_name:string, status:string, remote_id:?string, remote_order:?int, diff:?string}
 	 */
 	private function compare( string $key, array $expected, ?array $remote ): array {
 		if ( null === $remote ) {
 			return array(
-				'key'             => $key,
-				'expected_name'   => $expected['name'],
-				'status'          => self::STATUS_MISSING,
-				'remote_id'       => null,
-				'remote_position' => null,
-				'diff'            => null,
+				'key'           => $key,
+				'expected_name' => $expected['name'],
+				'status'        => self::STATUS_MISSING,
+				'remote_id'     => null,
+				'remote_order'  => null,
+				'diff'          => null,
 			);
 		}
 
-		$remote_id       = isset( $remote['id'] ) && is_numeric( $remote['id'] ) ? (int) $remote['id'] : null;
-		$remote_position = isset( $remote['position'] ) && is_numeric( $remote['position'] ) ? (int) $remote['position'] : null;
+		$remote_id    = isset( $remote['id'] ) && is_string( $remote['id'] ) && '' !== $remote['id'] ? $remote['id'] : null;
+		$remote_order = isset( $remote['order'] ) && is_numeric( $remote['order'] ) ? (int) $remote['order'] : null;
 
-		$expected_payload  = $expected['payload'];
-		$expected_position = $expected['expected_position'] ?? null;
-		$drift             = $this->find_drift( $expected_payload, $remote, $expected_position, $remote_position );
+		$expected_payload = $expected['payload'];
+		$expected_order   = $expected['expected_order'] ?? null;
+		$drift            = $this->find_drift( $expected_payload, $remote, $expected_order, $remote_order );
 
 		return array(
-			'key'             => $key,
-			'expected_name'   => $expected['name'],
-			'status'          => null === $drift ? self::STATUS_OK : self::STATUS_DRIFTED,
-			'remote_id'       => $remote_id,
-			'remote_position' => $remote_position,
-			'diff'            => $drift,
+			'key'           => $key,
+			'expected_name' => $expected['name'],
+			'status'        => null === $drift ? self::STATUS_OK : self::STATUS_DRIFTED,
+			'remote_id'     => $remote_id,
+			'remote_order'  => $remote_order,
+			'diff'          => $drift,
 		);
 	}
 
@@ -101,90 +101,89 @@ class Audit {
 	 * @param array<string,mixed> $expected
 	 * @param array<string,mixed> $remote
 	 */
-	private function find_drift( array $expected, array $remote, ?int $expected_position = null, ?int $remote_position = null ): ?string {
+	private function find_drift( array $expected, array $remote, ?int $expected_order = null, ?int $remote_order = null ): ?string {
 		if ( $this->normalize_bool( $remote['enabled'] ?? null ) !== ( $expected['enabled'] ?? null ) ) {
 			return __( 'Rule is disabled on the zone.', 'smoxy' );
 		}
 
-		// Stop flag matters for the images rule, which depends on stop=true to
-		// short-circuit downstream rules. Comparing it for every rule keeps the
-		// drift check uniform.
-		if ( $this->normalize_bool( $remote['stop'] ?? null ) !== (bool) ( $expected['stop'] ?? false ) ) {
+		// Stop flag matters for the images rule, which depends on
+		// stopOnMatch=true to short-circuit downstream rules. Comparing it for
+		// every rule keeps the drift check uniform.
+		if ( $this->normalize_bool( $remote['stopOnMatch'] ?? null ) !== (bool) ( $expected['stopOnMatch'] ?? false ) ) {
 			return __( 'Stop flag differs from the plugin default.', 'smoxy' );
 		}
 
-		// Only check position drift for rules that declare an expected slot
+		// Only check order drift for rules that declare an expected slot
 		// (the images rule does; the bypass rules don't, since users may
 		// reorder them around their own custom rules).
-		if ( null !== $expected_position && null !== $remote_position && $expected_position !== $remote_position ) {
+		if ( null !== $expected_order && null !== $remote_order && $expected_order !== $remote_order ) {
 			return __( 'Position differs from the plugin default.', 'smoxy' );
 		}
 
-		$expected_expr = $this->normalize_expression( $expected['expressions'] ?? null );
-		$remote_expr   = $this->normalize_expression( $remote['expressions'] ?? null );
-		if ( $this->canonicalize( $expected_expr ) !== $this->canonicalize( $remote_expr ) ) {
-			return __( 'Expression differs from the plugin default.', 'smoxy' );
+		$expected_conditions = $this->normalize_condition_group( $expected['conditions'] ?? null );
+		$remote_conditions   = $this->normalize_condition_group( $remote['conditions'] ?? null );
+		if ( $this->canonicalize( $expected_conditions ) !== $this->canonicalize( $remote_conditions ) ) {
+			return __( 'Conditions differ from the plugin default.', 'smoxy' );
 		}
 
-		$expected_actions = $this->canonicalize( $expected['rules'] ?? null );
-		$remote_actions   = $this->canonicalize( $this->normalize_actions( $remote['rules'] ?? null ) );
-		if ( $expected_actions !== $remote_actions ) {
-			return __( 'Action settings differ from the plugin default.', 'smoxy' );
+		$expected_overrides = $this->canonicalize( $this->normalize_overrides( $expected['settingsOverrides'] ?? null ) );
+		$remote_overrides   = $this->canonicalize( $this->normalize_overrides( $remote['settingsOverrides'] ?? null ) );
+		if ( $expected_overrides !== $remote_overrides ) {
+			return __( 'Settings overrides differ from the plugin default.', 'smoxy' );
 		}
 
 		return null;
 	}
 
 	/**
-	 * Reduce the expression to a comparable canonical form. The hub stores
-	 * leaf rules with `target` and `value` normalized to null when the field
-	 * is target-less (e.g. `uri`) or the operator carries no value (e.g.
-	 * `exists`) — but the API accepts both empty-string and null on POST, so
-	 * we normalize both sides here.
+	 * Reduce a condition group to a comparable canonical form. The hub
+	 * normalizes target-less and value-less conditions (e.g. `exists`) to
+	 * omit those keys on read, while the plugin may send them as empty
+	 * strings — both collapse to null here.
 	 *
 	 * @param mixed $value
 	 * @return array<string,mixed>|null
 	 */
-	private function normalize_expression( $value ): ?array {
+	private function normalize_condition_group( $value ): ?array {
 		if ( ! is_array( $value ) ) {
 			return null;
 		}
-		if ( ! isset( $value['rules'] ) || ! is_array( $value['rules'] ) ) {
+		if ( ! isset( $value['conditions'] ) || ! is_array( $value['conditions'] ) ) {
 			return null;
 		}
-		$condition = is_string( $value['condition'] ?? null ) ? strtolower( $value['condition'] ) : '';
-		$rules     = array();
-		foreach ( array_values( $value['rules'] ) as $item ) {
-			$rules[] = $this->normalize_expression_rule( $item );
+		$logic      = is_string( $value['logic'] ?? null ) ? strtolower( $value['logic'] ) : '';
+		$conditions = array();
+		foreach ( array_values( $value['conditions'] ) as $item ) {
+			$conditions[] = $this->normalize_condition( $item );
 		}
 		return array(
-			'condition' => $condition,
-			'rules'     => $rules,
+			'logic'      => $logic,
+			'conditions' => $conditions,
 		);
 	}
 
 	/**
-	 * Normalize a single leaf or nested-group rule. Empty strings on
+	 * Normalize a single leaf condition or nested group. Empty strings on
 	 * `target` and `value` collapse to null so the canonical comparison
 	 * matches what the hub returns from GET.
 	 *
-	 * @param mixed $rule
+	 * @param mixed $condition
 	 * @return array<string,mixed>
 	 */
-	private function normalize_expression_rule( $rule ): array {
-		if ( ! is_array( $rule ) ) {
+	private function normalize_condition( $condition ): array {
+		if ( ! is_array( $condition ) ) {
 			return array();
 		}
-		// Nested group (has its own rules + condition keys).
-		if ( isset( $rule['rules'] ) && is_array( $rule['rules'] ) ) {
-			$nested = $this->normalize_expression( $rule );
+		// Nested group (has its own conditions + logic keys).
+		if ( isset( $condition['conditions'] ) && is_array( $condition['conditions'] ) ) {
+			$nested = $this->normalize_condition_group( $condition );
 			return null === $nested ? array() : $nested;
 		}
 		return array(
-			'field'    => isset( $rule['field'] ) ? (string) $rule['field'] : '',
-			'target'   => $this->blank_to_null( $rule['target'] ?? null ),
-			'operator' => isset( $rule['operator'] ) ? (string) $rule['operator'] : '',
-			'value'    => $this->blank_to_null( $rule['value'] ?? null ),
+			'field'    => isset( $condition['field'] ) ? (string) $condition['field'] : '',
+			'target'   => $this->blank_to_null( $condition['target'] ?? null ),
+			'operator' => isset( $condition['operator'] ) ? (string) $condition['operator'] : '',
+			'value'    => $this->blank_to_null( $condition['value'] ?? null ),
 		);
 	}
 
@@ -200,26 +199,27 @@ class Audit {
 	}
 
 	/**
-	 * The hub returns action rules as a list of {name, value} entries; some
-	 * responses wrap the value in an extra layer — strip everything down to
-	 * the minimal shape we POST.
+	 * The hub returns settingsOverrides with only non-null values, but the
+	 * cache-key sub-objects always echo the read-only `uri: true` baseline —
+	 * strip it (and any explicit nulls) so the comparison only covers the
+	 * settings the plugin actually manages.
 	 *
 	 * @param mixed $value
-	 * @return list<array{name:string, value:mixed}>
+	 * @return array<string,mixed>
 	 */
-	private function normalize_actions( $value ): array {
+	private function normalize_overrides( $value ): array {
 		if ( ! is_array( $value ) ) {
 			return array();
 		}
 		$out = array();
-		foreach ( $value as $item ) {
-			if ( ! is_array( $item ) || ! isset( $item['name'] ) ) {
+		foreach ( $value as $key => $setting ) {
+			if ( null === $setting ) {
 				continue;
 			}
-			$out[] = array(
-				'name'  => (string) $item['name'],
-				'value' => $item['value'] ?? null,
-			);
+			if ( in_array( $key, array( 'cachingStaticCacheKey', 'cachingDynamicCacheKey' ), true ) && is_array( $setting ) ) {
+				unset( $setting['uri'] );
+			}
+			$out[ (string) $key ] = $setting;
 		}
 		return $out;
 	}

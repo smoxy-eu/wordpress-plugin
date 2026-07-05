@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning 2.0.0](https://semver.org/spec/
 
 ## [Unreleased]
 
+### Changed
+
+- Migrated the hub API client to the new Smoxy Hub API at `https://api.smoxy.eu` (the previous `https://hub.smoxy.eu/api/v2` API was replaced wholesale). Authentication now uses the documented `X-API-TOKEN` header instead of the `Authorization: Bearer` workaround.
+- Conditional rules are now managed through the `/api/zones/{zoneId}/configuration-rules` resource: rule ids are UUIDs, `expressions`/`rules` became `conditions` (with `logic`, `field`, `operator`, `target`, `value`) and `settingsOverrides`, `stop` became `stopOnMatch`, and the images rule narrows the static cache key via `settingsOverrides.cachingStaticCacheKey.varyByHostname = false`. Condition fields renamed: `cookies` → `cookie`, `args` → `queryParam`.
+- Rule ordering is a plain `order` field (1-based, honored on create, re-sequenced on update) — the dedicated `/conditional-rule/{id}/position` PATCH endpoint and `Client::patch_conditional_rule_position()` are gone; the images rule pins `order: 1` directly in its payload.
+- Zone creation sends `organization` as an IRI, the lowercase `tag` enum (`prod`/`stage`/`dev`), a `defaultBackend` (`{type: "origin", id: <uuid>}`) instead of the old `origin` field, and flat `enabled`/`securityEnabled`/`cachingDynamicEnabled`/`cachingStaticEnabled` flags instead of the `configurations` object. The BAN secret is read from the zone's top-level `banToken` (was `configurations.token`).
+- Hostnames are org- and zone-scoped now: lookup via `GET /api/organizations/{organizationId}/hostnames?q=`, creation via `POST /api/zones/{zoneId}/hostnames` with `name` (was a flat `/api/v2/hostnames` collection with `hostname`), and a zone-to-zone move is a merge-PATCH within the hostname's current zone with the target zone as an IRI. Hostname and origin-server ids are UUIDs.
+- The edge BAN protocol (`ingress.smoxy.eu`, `secret`/`tags`/`type: flushall` headers) is unchanged and the `Purger` is untouched — only the hub API integration moved.
+
 ## [1.1.0] - 2026-05-22
 
 ### Added

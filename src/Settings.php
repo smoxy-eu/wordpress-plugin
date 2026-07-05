@@ -230,7 +230,7 @@ class Settings {
 				<th scope="row"><label for="smoxy_api_token"><?php echo esc_html__( 'API token', 'smoxy' ); ?></label></th>
 				<td>
 					<input type="password" id="smoxy_api_token" name="api_token" value="" class="regular-text" autocomplete="new-password" required/>
-					<p class="description"><?php echo esc_html__( 'The token is sent only to hub.smoxy.eu over HTTPS and stored as a WordPress option.', 'smoxy' ); ?></p>
+					<p class="description"><?php echo esc_html__( 'The token is sent only to api.smoxy.eu over HTTPS and stored as a WordPress option.', 'smoxy' ); ?></p>
 				</td>
 			</tr></tbody></table>
 			<?php submit_button( __( 'Validate & continue', 'smoxy' ) ); ?>
@@ -361,8 +361,9 @@ class Settings {
 							<p>
 								<label><?php echo esc_html__( 'Tag', 'smoxy' ); ?>
 									<select name="new_zone_tag">
-										<option value="Prod" selected>Prod</option>
-										<option value="Dev">Dev</option>
+										<option value="prod" selected>prod</option>
+										<option value="stage">stage</option>
+										<option value="dev">dev</option>
 									</select>
 								</label>
 							</p>
@@ -687,9 +688,8 @@ class Settings {
 			$this->redirect_back();
 		}
 
-		// /api/internal/me requires JWT auth and 401s on X-API-TOKEN. Use
-		// list-organizations as the validation probe — it accepts X-API-TOKEN
-		// and we need the result on the next step anyway.
+		// Use list-organizations as the validation probe — it accepts the
+		// X-API-TOKEN header and we need the result on the next step anyway.
 		$client = new Client( $token );
 		$probe  = $client->list_organizations();
 		if ( ! $probe['ok'] ) {
@@ -769,12 +769,14 @@ class Settings {
 			$input['zone_id'] = $zone_id;
 		} else {
 			$input['new_zone_name'] = isset( $_POST['new_zone_name'] ) ? sanitize_text_field( wp_unslash( $_POST['new_zone_name'] ) ) : '';
-			$input['new_zone_tag']  = isset( $_POST['new_zone_tag'] ) ? sanitize_text_field( wp_unslash( $_POST['new_zone_tag'] ) ) : 'Prod';
+			$new_zone_tag           = isset( $_POST['new_zone_tag'] ) ? sanitize_text_field( wp_unslash( $_POST['new_zone_tag'] ) ) : 'prod';
+			$input['new_zone_tag']  = in_array( $new_zone_tag, array( 'prod', 'stage', 'dev' ), true ) ? $new_zone_tag : 'prod';
 
 			$origin_choice = isset( $_POST['origin_choice'] ) ? (string) wp_unslash( $_POST['origin_choice'] ) : '';
 			if ( 'existing' === $origin_choice ) {
-				$input['origin_id'] = isset( $_POST['origin_id'] ) ? (int) $_POST['origin_id'] : 0;
-				if ( ! $input['origin_id'] ) {
+				$origin_id          = isset( $_POST['origin_id'] ) ? sanitize_text_field( wp_unslash( $_POST['origin_id'] ) ) : '';
+				$input['origin_id'] = '' !== $origin_id ? $origin_id : null;
+				if ( null === $input['origin_id'] ) {
 					$this->flash(
 						array(
 							'ok'      => false,
@@ -879,19 +881,18 @@ class Settings {
 			$this->redirect_back();
 		}
 
-		$client          = new Client( self::get_api_token() );
-		$audit           = new Audit( $client );
-		$report          = $audit->audit_zone( $zone_id );
-		$status          = $report['ok'] ? ( $report['rules'][ $key ]['status'] ?? Audit::STATUS_MISSING ) : Audit::STATUS_MISSING;
-		$remote_id       = $report['ok'] ? ( $report['rules'][ $key ]['remote_id'] ?? null ) : null;
-		$remote_position = $report['ok'] ? ( $report['rules'][ $key ]['remote_position'] ?? null ) : null;
+		$client    = new Client( self::get_api_token() );
+		$audit     = new Audit( $client );
+		$report    = $audit->audit_zone( $zone_id );
+		$status    = $report['ok'] ? ( $report['rules'][ $key ]['status'] ?? Audit::STATUS_MISSING ) : Audit::STATUS_MISSING;
+		$remote_id = $report['ok'] ? ( $report['rules'][ $key ]['remote_id'] ?? null ) : null;
 
+		// The payload carries `order` where a slot is pinned, so create and
+		// patch both put the rule into the expected position.
 		if ( Audit::STATUS_DRIFTED === $status && null !== $remote_id ) {
-			$result = $client->patch_conditional_rule( $zone_id, (int) $remote_id, $all[ $key ]['payload'] );
+			$result = $client->patch_configuration_rule( $zone_id, (string) $remote_id, $all[ $key ]['payload'] );
 		} else {
-			$result          = $client->create_conditional_rule( $zone_id, $all[ $key ]['payload'] );
-			$remote_id       = isset( $result['body']['id'] ) && is_numeric( $result['body']['id'] ) ? (int) $result['body']['id'] : $remote_id;
-			$remote_position = isset( $result['body']['position'] ) && is_numeric( $result['body']['position'] ) ? (int) $result['body']['position'] : $remote_position;
+			$result = $client->create_configuration_rule( $zone_id, $all[ $key ]['payload'] );
 		}
 
 		if ( ! $result['ok'] ) {
@@ -902,20 +903,6 @@ class Settings {
 				)
 			);
 			$this->redirect_back();
-		}
-
-		$expected_position = $all[ $key ]['expected_position'] ?? null;
-		if ( null !== $expected_position && null !== $remote_id && $expected_position !== $remote_position ) {
-			$move = $client->patch_conditional_rule_position( $zone_id, (int) $remote_id, (int) $expected_position );
-			if ( ! $move['ok'] ) {
-				$this->flash(
-					array(
-						'ok'      => false,
-						'message' => $move['error'] ?? __( 'Could not reorder the rule.', 'smoxy' ),
-					)
-				);
-				$this->redirect_back();
-			}
 		}
 
 		$this->flash(
@@ -957,10 +944,24 @@ class Settings {
 			$this->redirect_back();
 		}
 
+		// A zone-to-zone move is a PATCH within the hostname's current zone,
+		// with the new zone as an IRI.
+		$existing_zone_id = isset( $pending['existing_zone_id'] ) ? (int) $pending['existing_zone_id'] : 0;
+		if ( $existing_zone_id <= 0 ) {
+			$this->flash(
+				array(
+					'ok'      => false,
+					'message' => __( 'The hostname\'s current zone is unknown — move it in the smoxy hub instead.', 'smoxy' ),
+				)
+			);
+			$this->redirect_back();
+		}
+
 		$client = new Client( self::get_api_token() );
 		$result = $client->patch_hostname(
-			(int) $pending['hostname_id'],
-			array( 'zone' => $zone_id )
+			$existing_zone_id,
+			(string) $pending['hostname_id'],
+			array( 'zone' => '/api/zones/' . $zone_id )
 		);
 		if ( ! $result['ok'] ) {
 			$this->flash(
