@@ -6,7 +6,7 @@ defined( 'ABSPATH' ) || exit;
 
 /**
  * Thin wrapper around wp_remote_request() for the smoxy hub API
- * (https://hub.smoxy.eu). Authenticates every call with the
+ * (https://api.smoxy.eu). Authenticates every call with the
  * X-API-TOKEN header from plugin settings.
  *
  * Every method returns an array of shape:
@@ -18,7 +18,7 @@ defined( 'ABSPATH' ) || exit;
 class Client {
 
 
-	public const BASE_URL = 'https://hub.smoxy.eu';
+	public const BASE_URL = 'https://api.smoxy.eu';
 
 	private string $token;
 
@@ -34,7 +34,7 @@ class Client {
 	 * @return array{ok:bool, status:int, body:array<int|string,mixed>, error:?string}
 	 */
 	public function list_organizations(): array {
-		return $this->request( 'GET', '/api/v2/organizations', array( 'itemsPerPage' => 100 ) );
+		return $this->request( 'GET', '/api/organizations', array( 'itemsPerPage' => 100 ) );
 	}
 
 	/**
@@ -43,11 +43,10 @@ class Client {
 	public function list_zones( int $organization_id ): array {
 		return $this->request(
 			'GET',
-			'/api/v2/delivery/zone',
+			'/api/zones',
 			array(
 				'organization' => $organization_id,
 				'itemsPerPage' => 100,
-				'is_deleted'   => 'false',
 			)
 		);
 	}
@@ -56,7 +55,7 @@ class Client {
 	 * @return array{ok:bool, status:int, body:array<int|string,mixed>, error:?string}
 	 */
 	public function get_zone( int $zone_id ): array {
-		return $this->request( 'GET', '/api/v2/delivery/zone/' . $zone_id );
+		return $this->request( 'GET', '/api/zones/' . $zone_id );
 	}
 
 	/**
@@ -64,7 +63,7 @@ class Client {
 	 * @return array{ok:bool, status:int, body:array<int|string,mixed>, error:?string}
 	 */
 	public function create_zone( array $payload ): array {
-		return $this->request( 'POST', '/api/v2/delivery/zone', array(), $payload );
+		return $this->request( 'POST', '/api/zones', array(), $payload );
 	}
 
 	/**
@@ -73,7 +72,7 @@ class Client {
 	public function list_origins( int $organization_id ): array {
 		return $this->request(
 			'GET',
-			'/api/v2/organizations/' . $organization_id . '/origin-servers',
+			'/api/organizations/' . $organization_id . '/origin-servers',
 			array( 'itemsPerPage' => 100 )
 		);
 	}
@@ -85,7 +84,7 @@ class Client {
 	public function create_origin( int $organization_id, array $payload ): array {
 		return $this->request(
 			'POST',
-			'/api/v2/organizations/' . $organization_id . '/origin-servers',
+			'/api/organizations/' . $organization_id . '/origin-servers',
 			array(),
 			$payload
 		);
@@ -95,32 +94,36 @@ class Client {
 	 * @return array{ok:bool, status:int, body:array<int|string,mixed>, error:?string}
 	 */
 	public function list_hostnames( int $organization_id, ?string $hostname = null ): array {
-		$query = array(
-			'organization' => $organization_id,
-			'itemsPerPage' => 100,
-		);
+		$query = array( 'itemsPerPage' => 100 );
 		if ( null !== $hostname && '' !== $hostname ) {
-			$query['hostname'] = $hostname;
+			$query['q'] = $hostname;
 		}
-		return $this->request( 'GET', '/api/v2/hostnames', $query );
+		return $this->request(
+			'GET',
+			'/api/organizations/' . $organization_id . '/hostnames',
+			$query
+		);
 	}
 
 	/**
 	 * @param array<string,mixed> $payload
 	 * @return array{ok:bool, status:int, body:array<int|string,mixed>, error:?string}
 	 */
-	public function create_hostname( array $payload ): array {
-		return $this->request( 'POST', '/api/v2/hostnames', array(), $payload );
+	public function create_hostname( int $zone_id, array $payload ): array {
+		return $this->request( 'POST', '/api/zones/' . $zone_id . '/hostnames', array(), $payload );
 	}
 
 	/**
+	 * Zone-to-zone hostname move: PATCH within the hostname's current zone
+	 * with the new zone as an IRI (e.g. `{"zone": "/api/zones/42"}`).
+	 *
 	 * @param array<string,mixed> $payload
 	 * @return array{ok:bool, status:int, body:array<int|string,mixed>, error:?string}
 	 */
-	public function patch_hostname( int $hostname_id, array $payload ): array {
+	public function patch_hostname( int $zone_id, string $hostname_id, array $payload ): array {
 		return $this->request(
 			'PATCH',
-			'/api/v2/hostnames/' . $hostname_id,
+			'/api/zones/' . $zone_id . '/hostnames/' . rawurlencode( $hostname_id ),
 			array(),
 			$payload,
 			'application/merge-patch+json'
@@ -130,10 +133,10 @@ class Client {
 	/**
 	 * @return array{ok:bool, status:int, body:array<int|string,mixed>, error:?string}
 	 */
-	public function list_conditional_rules( int $zone_id ): array {
+	public function list_configuration_rules( int $zone_id ): array {
 		return $this->request(
 			'GET',
-			'/api/v2/delivery/zone/' . $zone_id . '/conditional-rule',
+			'/api/zones/' . $zone_id . '/configuration-rules',
 			array( 'itemsPerPage' => 100 )
 		);
 	}
@@ -142,10 +145,10 @@ class Client {
 	 * @param array<string,mixed> $payload
 	 * @return array{ok:bool, status:int, body:array<int|string,mixed>, error:?string}
 	 */
-	public function create_conditional_rule( int $zone_id, array $payload ): array {
+	public function create_configuration_rule( int $zone_id, array $payload ): array {
 		return $this->request(
 			'POST',
-			'/api/v2/delivery/zone/' . $zone_id . '/conditional-rule',
+			'/api/zones/' . $zone_id . '/configuration-rules',
 			array(),
 			$payload
 		);
@@ -155,17 +158,15 @@ class Client {
 	 * @param array<string,mixed> $payload
 	 * @return array{ok:bool, status:int, body:array<int|string,mixed>, error:?string}
 	 */
-	public function patch_conditional_rule( int $zone_id, int $rule_id, array $payload ): array {
-		// The hub's UniqueValidator compares the URL `id` (string) to the
-		// entity id (int) with strict ===, so it never recognizes a self-update
-		// and trips "name already exists" on every PATCH that includes the
-		// same name. We don't change rule names from the plugin anyway —
-		// dropping the field here works around the bug under merge-patch semantics
-		// (omitted fields stay unchanged).
+	public function patch_configuration_rule( int $zone_id, string $rule_id, array $payload ): array {
+		// The plugin never renames its managed rules, so drop the name from
+		// the payload — under merge-patch semantics omitted fields stay
+		// unchanged, and this sidesteps unique-name validation tripping on a
+		// self-update that re-sends the same name.
 		unset( $payload['name'] );
 		return $this->request(
 			'PATCH',
-			'/api/v2/delivery/zone/' . $zone_id . '/conditional-rule/' . $rule_id,
+			'/api/zones/' . $zone_id . '/configuration-rules/' . rawurlencode( $rule_id ),
 			array(),
 			$payload,
 			'application/merge-patch+json'
@@ -173,30 +174,12 @@ class Client {
 	}
 
 	/**
-	 * Reorder a conditional rule. The hub assigns positions sequentially on
-	 * create and ignores `position` in the create/patch payloads — the only
-	 * way to move a rule is this dedicated endpoint. Positions are 1-based;
-	 * out-of-range values are clamped by the server (per PositionProcessor).
-	 *
 	 * @return array{ok:bool, status:int, body:array<int|string,mixed>, error:?string}
 	 */
-	public function patch_conditional_rule_position( int $zone_id, int $rule_id, int $position ): array {
-		return $this->request(
-			'PATCH',
-			'/api/v2/delivery/zone/' . $zone_id . '/conditional-rule/' . $rule_id . '/position',
-			array(),
-			array( 'position' => $position ),
-			'application/merge-patch+json'
-		);
-	}
-
-	/**
-	 * @return array{ok:bool, status:int, body:array<int|string,mixed>, error:?string}
-	 */
-	public function delete_conditional_rule( int $zone_id, int $rule_id ): array {
+	public function delete_configuration_rule( int $zone_id, string $rule_id ): array {
 		return $this->request(
 			'DELETE',
-			'/api/v2/delivery/zone/' . $zone_id . '/conditional-rule/' . $rule_id
+			'/api/zones/' . $zone_id . '/configuration-rules/' . rawurlencode( $rule_id )
 		);
 	}
 
@@ -230,18 +213,14 @@ class Client {
 			$url = add_query_arg( array_map( static fn( $v ) => is_bool( $v ) ? ( $v ? 'true' : 'false' ) : $v, $query ), $url );
 		}
 
-		// The hub's open_api_v2 firewall uses Symfony's access_token
-		// authenticator with no custom extractor, so the token must arrive
-		// as `Authorization: Bearer <token>`. The OpenAPI doc that names
-		// X-API-TOKEN is misleading — sending only that header returns 401.
 		$args = array(
 			'method'  => $method,
 			'timeout' => 15,
 			'headers' => array(
-				'Accept'        => 'application/json',
-				'Authorization' => 'Bearer ' . $this->token,
-				'User-Agent'    => 'smoxy-wordpress-plugin/' . ( defined( 'SMOXY_VERSION' ) ? SMOXY_VERSION : 'dev' ),
-				'Content-Type'  => $content_type,
+				'Accept'       => 'application/json',
+				'X-API-TOKEN'  => $this->token,
+				'User-Agent'   => 'smoxy-wordpress-plugin/' . ( defined( 'SMOXY_VERSION' ) ? SMOXY_VERSION : 'dev' ),
+				'Content-Type' => $content_type,
 			),
 		);
 

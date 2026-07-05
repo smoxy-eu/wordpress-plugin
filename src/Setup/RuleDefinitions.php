@@ -5,18 +5,19 @@ namespace Smoxy\WP\Setup;
 defined( 'ABSPATH' ) || exit;
 
 /**
- * The conditional rules the plugin keeps in sync on the bound smoxy zone.
+ * The configuration rules the plugin keeps in sync on the bound smoxy zone
+ * (shown as "Conditional Rules" in the smoxy dashboard).
  *
- * Three rules turn off the full smoxy site configuration (`enabled = false`)
- * for requests that must never be served from cache: logged-in WordPress users,
- * WooCommerce/account paths, and the wp-admin area.
+ * Three rules turn off the full smoxy site configuration (`enabled = false`
+ * settings override) for requests that must never be served from cache:
+ * logged-in WordPress users, WooCommerce/account paths, and the wp-admin area.
  *
- * A fourth rule narrows the cache key for static images to URI only and stops
- * further conditional-rule evaluation so the cheap, high-cache-hit image path
- * is not re-keyed by subsequent rules.
+ * A fourth rule narrows the static cache key for images to URI only and stops
+ * further rule evaluation so the cheap, high-cache-hit image path is not
+ * re-keyed by subsequent rules.
  *
  * Rules are returned in the order they should appear on the zone — images
- * first at position #1 so the stop flag short-circuits the rest for image
+ * first at order #1 so the stop flag short-circuits the rest for image
  * URLs that don't need WP-aware bypass logic anyway.
  *
  * The rule `name` is the stable lookup key the audit page uses to find the
@@ -31,7 +32,7 @@ class RuleDefinitions {
 	public const KEY_WP_ADMIN    = 'wp_admin';
 
 	/**
-	 * @return array<string, array{name:string, key:string, description:string, expected_position:?int, payload:array<string,mixed>}>
+	 * @return array<string, array{name:string, key:string, description:string, expected_order:?int, payload:array<string,mixed>}>
 	 */
 	public static function all(): array {
 		return array(
@@ -43,47 +44,44 @@ class RuleDefinitions {
 	}
 
 	/**
-	 * The hub's v2 API ignores `position` on POST and assigns the next slot;
-	 * the bootstrap reconciles the rule's position afterwards via a dedicated
-	 * PATCH (see Client::patch_conditional_rule_position). `expected_position`
-	 * declares the desired slot; null means "we don't care".
+	 * `order` is 1-based and honored on create; setting it on update
+	 * re-sequences the sibling rules so the sequence stays contiguous.
+	 * `expected_order` declares the desired slot for the audit; null means
+	 * "we don't care". Rules without it omit `order` from the payload so
+	 * the hub appends them after the current highest order.
 	 *
-	 * The cache-key action is the v2 `vary_cache` object — setting
-	 * host_vary_enabled=false and cookie_vary_params=[] reduces the cache key
-	 * to URI only (URI is always included by the edge).
+	 * The cache-key override is `settingsOverrides.cachingStaticCacheKey` —
+	 * `varyByHostname: false` reduces the static cache key to URI only
+	 * (URI is always included by the edge and cannot be disabled).
 	 *
-	 * @return array{name:string, key:string, description:string, expected_position:?int, payload:array<string,mixed>}
+	 * @return array{name:string, key:string, description:string, expected_order:?int, payload:array<string,mixed>}
 	 */
 	public static function images(): array {
 		$name = 'WordPress: cache images on URI only';
 		return array(
-			'name'              => $name,
-			'key'               => self::KEY_IMAGES,
-			'description'       => __( 'For image responses, narrows the cache key to the URI (no host or cookie variance) and stops further conditional-rule evaluation so images are not re-keyed by downstream rules.', 'smoxy' ),
-			'expected_position' => 1,
-			'payload'           => array(
-				'name'        => $name,
-				'description' => 'Managed by the smoxy WordPress plugin.',
-				'stop'        => true,
-				'enabled'     => true,
-				'expressions' => array(
-					'condition' => 'and',
-					'rules'     => array(
+			'name'           => $name,
+			'key'            => self::KEY_IMAGES,
+			'description'    => __( 'For image responses, narrows the cache key to the URI (no host variance) and stops further rule evaluation so images are not re-keyed by downstream rules.', 'smoxy' ),
+			'expected_order' => 1,
+			'payload'        => array(
+				'name'              => $name,
+				'description'       => 'Managed by the smoxy WordPress plugin.',
+				'stopOnMatch'       => true,
+				'enabled'           => true,
+				'order'             => 1,
+				'conditions'        => array(
+					'logic'      => 'and',
+					'conditions' => array(
 						array(
 							'field'    => 'uri',
-							'target'   => '',
 							'operator' => 'matches',
 							'value'    => '/.+\.(png|jpeg|jpg|gif|webp|avif|svg)$',
 						),
 					),
 				),
-				'rules'       => array(
-					array(
-						'name'  => 'vary_cache',
-						'value' => array(
-							'host_vary_enabled'  => false,
-							'cookie_vary_params' => array(),
-						),
+				'settingsOverrides' => array(
+					'cachingStaticCacheKey' => array(
+						'varyByHostname' => false,
 					),
 				),
 			),
@@ -101,120 +99,106 @@ class RuleDefinitions {
 	}
 
 	/**
-	 * @return array{name:string, key:string, description:string, expected_position:?int, payload:array<string,mixed>}
+	 * @return array{name:string, key:string, description:string, expected_order:?int, payload:array<string,mixed>}
 	 */
 	public static function logged_in(): array {
 		$name = 'WordPress: bypass cache for logged-in users';
 		return array(
-			'name'              => $name,
-			'key'               => self::KEY_LOGGED_IN,
-			'description'       => __( 'Disables smoxy whenever the WordPress logged-in cookie is present.', 'smoxy' ),
-			'expected_position' => null,
-			'payload'           => array(
-				'name'        => $name,
-				'description' => 'Managed by the smoxy WordPress plugin.',
-				'stop'        => false,
-				'enabled'     => true,
-				'expressions' => array(
-					'condition' => 'or',
-					'rules'     => array(
+			'name'           => $name,
+			'key'            => self::KEY_LOGGED_IN,
+			'description'    => __( 'Disables smoxy whenever the WordPress logged-in cookie is present.', 'smoxy' ),
+			'expected_order' => null,
+			'payload'        => array(
+				'name'              => $name,
+				'description'       => 'Managed by the smoxy WordPress plugin.',
+				'stopOnMatch'       => false,
+				'enabled'           => true,
+				'conditions'        => array(
+					'logic'      => 'or',
+					'conditions' => array(
 						array(
-							'field'    => 'cookies',
+							'field'    => 'cookie',
 							'target'   => self::logged_in_cookie_name(),
 							'operator' => 'exists',
-							'value'    => '',
 						),
 					),
 				),
-				'rules'       => array(
-					array(
-						'name'  => 'enabled',
-						'value' => false,
-					),
+				'settingsOverrides' => array(
+					'enabled' => false,
 				),
 			),
 		);
 	}
 
 	/**
-	 * @return array{name:string, key:string, description:string, expected_position:?int, payload:array<string,mixed>}
+	 * @return array{name:string, key:string, description:string, expected_order:?int, payload:array<string,mixed>}
 	 */
 	public static function woocommerce(): array {
 		$name = 'WordPress: bypass cache for WooCommerce and account paths';
 		return array(
-			'name'              => $name,
-			'key'               => self::KEY_WOOCOMMERCE,
-			'description'       => __( 'Disables smoxy on cart, checkout, my-account, product pages and add-to-cart requests.', 'smoxy' ),
-			'expected_position' => null,
-			'payload'           => array(
-				'name'        => $name,
-				'description' => 'Managed by the smoxy WordPress plugin.',
-				'stop'        => false,
-				'enabled'     => true,
-				'expressions' => array(
-					'condition' => 'or',
-					'rules'     => array(
+			'name'           => $name,
+			'key'            => self::KEY_WOOCOMMERCE,
+			'description'    => __( 'Disables smoxy on cart, checkout, my-account, product pages and add-to-cart requests.', 'smoxy' ),
+			'expected_order' => null,
+			'payload'        => array(
+				'name'              => $name,
+				'description'       => 'Managed by the smoxy WordPress plugin.',
+				'stopOnMatch'       => false,
+				'enabled'           => true,
+				'conditions'        => array(
+					'logic'      => 'or',
+					'conditions' => array(
 						array(
 							'field'    => 'uri',
-							'target'   => '',
 							'operator' => 'matches',
 							'value'    => '^/(cart|my-account/*|checkout|wc-api/*|addons|logout|lost-password|product/*)',
 						),
 						array(
-							'field'    => 'args',
+							'field'    => 'queryParam',
 							'target'   => 'add-to-cart',
 							'operator' => 'exists',
-							'value'    => '',
 						),
 						array(
-							'field'    => 'args',
+							'field'    => 'queryParam',
 							'target'   => 'wc-api',
 							'operator' => 'exists',
-							'value'    => '',
 						),
 					),
 				),
-				'rules'       => array(
-					array(
-						'name'  => 'enabled',
-						'value' => false,
-					),
+				'settingsOverrides' => array(
+					'enabled' => false,
 				),
 			),
 		);
 	}
 
 	/**
-	 * @return array{name:string, key:string, description:string, expected_position:?int, payload:array<string,mixed>}
+	 * @return array{name:string, key:string, description:string, expected_order:?int, payload:array<string,mixed>}
 	 */
 	public static function wp_admin(): array {
 		$name = 'WordPress: bypass cache for wp-admin';
 		return array(
-			'name'              => $name,
-			'key'               => self::KEY_WP_ADMIN,
-			'description'       => __( 'Disables smoxy on every request to the wp-admin backend.', 'smoxy' ),
-			'expected_position' => null,
-			'payload'           => array(
-				'name'        => $name,
-				'description' => 'Managed by the smoxy WordPress plugin.',
-				'stop'        => false,
-				'enabled'     => true,
-				'expressions' => array(
-					'condition' => 'and',
-					'rules'     => array(
+			'name'           => $name,
+			'key'            => self::KEY_WP_ADMIN,
+			'description'    => __( 'Disables smoxy on every request to the wp-admin backend.', 'smoxy' ),
+			'expected_order' => null,
+			'payload'        => array(
+				'name'              => $name,
+				'description'       => 'Managed by the smoxy WordPress plugin.',
+				'stopOnMatch'       => false,
+				'enabled'           => true,
+				'conditions'        => array(
+					'logic'      => 'and',
+					'conditions' => array(
 						array(
 							'field'    => 'uri',
-							'target'   => '',
 							'operator' => 'contains',
 							'value'    => 'wp-admin',
 						),
 					),
 				),
-				'rules'       => array(
-					array(
-						'name'  => 'enabled',
-						'value' => false,
-					),
+				'settingsOverrides' => array(
+					'enabled' => false,
 				),
 			),
 		);
