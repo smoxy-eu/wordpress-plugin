@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning 2.0.0](https://semver.org/spec/
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-07-05
+
+Major release: the plugin now talks to the new Smoxy Hub API. The previous `hub.smoxy.eu/api/v2` API was shut off upstream, so older plugin versions can no longer run the setup wizard, rule audit, or hostname management — updating is required. Edge-cache purging (BAN) is unaffected and keeps working on old and new versions alike.
+
 ### Changed
 
 - Migrated the hub API client to the new Smoxy Hub API at `https://api.smoxy.eu` (the previous `https://hub.smoxy.eu/api/v2` API was replaced wholesale). Authentication now uses the documented `X-API-TOKEN` header instead of the `Authorization: Bearer` workaround.
@@ -61,7 +65,8 @@ Initial public release. Connects WordPress to the [smoxy](https://www.smoxy.eu) 
 - GitHub Actions workflows: `lint`, `phpunit`, `plugin-check`, `smoke`, and `release` (builds zip + tar.gz on `v*` tag push and publishes a GitHub Release).
 - `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md`, `CHANGELOG.md`.
 
-[Unreleased]: https://github.com/smoxy-eu/wordpress-plugin/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/smoxy-eu/wordpress-plugin/compare/v2.0.0...HEAD
+[2.0.0]: https://github.com/smoxy-eu/wordpress-plugin/compare/v1.1.0...v2.0.0
 [1.1.0]: https://github.com/smoxy-eu/wordpress-plugin/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/smoxy-eu/wordpress-plugin/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/smoxy-eu/wordpress-plugin/releases/tag/v1.0.0
