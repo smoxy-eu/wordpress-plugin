@@ -2,7 +2,7 @@
 Contributors: smoxy
 Tags: woocommerce, cache, cdn, performance, image-optimization, security, waf, edge-cache, purge
 Requires at least: 6.0
-Tested up to: 7.0
+Tested up to: 7.1
 Requires PHP: 8.0
 Stable tag: 2.0.0
 License: MIT
@@ -48,6 +48,10 @@ All of it lives at the edge, in front of your origin, so attack traffic never re
 * Audit & one-click repair of the four managed rules if they drift on the hub side.
 * `smoxy_*` action hooks so other plugins can join the invalidation pipeline.
 
+= Behind Cloudflare? =
+
+Cache invalidation reaches the smoxy edge over the HTTP `BAN` method, which Cloudflare can interfere with: its DDoS protection may block `BAN` requests when many are sent in a short time, and it blocks the equivalent `PURGE` method outright, with no WAF rule able to override it. If your site is proxied through Cloudflare and purges are not taking effect, add a DNS-only (proxy disabled) subdomain and point your invalidation traffic at it. See https://docs.smoxy.eu/developer-guide/cloudflare-setup for the full setup.
+
 = Brands running smoxy =
 
 trigema, ETERNA, Stadt-Parfümerie Pieper, WM24, babyone, Topperz Store, Jeans-Fritz, foun10.
@@ -72,7 +76,7 @@ What is sent with each request:
 
 * The site's `Host` header (host portion of the WordPress home URL), so smoxy knows which Zone the purge applies to.
 * Your smoxy secret token in the `secret:` header, for authentication.
-* Either a list of cache tags to invalidate, or a `flushall` directive when a full purge is requested.
+* Either a list of cache tags to invalidate, or an `all` directive when a full purge is requested.
 
 No personal data, analytics, or telemetry is sent — only what smoxy needs to identify which content to purge.
 

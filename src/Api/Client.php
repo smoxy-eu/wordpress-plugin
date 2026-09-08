@@ -67,6 +67,20 @@ class Client {
 	}
 
 	/**
+	 * @param array<string,mixed> $payload
+	 * @return array{ok:bool, status:int, body:array<int|string,mixed>, error:?string}
+	 */
+	public function patch_zone( int $zone_id, array $payload ): array {
+		return $this->request(
+			'PATCH',
+			'/api/zones/' . $zone_id,
+			array(),
+			$payload,
+			'application/merge-patch+json'
+		);
+	}
+
+	/**
 	 * @return array{ok:bool, status:int, body:array<int|string,mixed>, error:?string}
 	 */
 	public function list_origins( int $organization_id ): array {

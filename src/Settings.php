@@ -6,6 +6,7 @@ use Smoxy\WP\Api\Client;
 use Smoxy\WP\Setup\Audit;
 use Smoxy\WP\Setup\Bootstrap;
 use Smoxy\WP\Setup\RuleDefinitions;
+use Smoxy\WP\Setup\ZoneSettings;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -23,6 +24,7 @@ class Settings {
 	public const CONNECT_ACTION          = 'smoxy_connect';
 	public const DISCONNECT_ACTION       = 'smoxy_disconnect';
 	public const RECREATE_RULE_ACTION    = 'smoxy_recreate_rule';
+	public const SYNC_SETTINGS_ACTION    = 'smoxy_sync_zone_settings';
 	public const MOVE_HOSTNAME_ACTION    = 'smoxy_move_hostname';
 	public const DISMISS_HOSTNAME_ACTION = 'smoxy_dismiss_hostname_move';
 	public const NOTICE_KEY              = 'smoxy_purge_notice';
@@ -37,6 +39,7 @@ class Settings {
 		add_action( 'admin_post_' . self::CONNECT_ACTION, array( $this, 'handle_connect' ) );
 		add_action( 'admin_post_' . self::DISCONNECT_ACTION, array( $this, 'handle_disconnect' ) );
 		add_action( 'admin_post_' . self::RECREATE_RULE_ACTION, array( $this, 'handle_recreate_rule' ) );
+		add_action( 'admin_post_' . self::SYNC_SETTINGS_ACTION, array( $this, 'handle_sync_zone_settings' ) );
 		add_action( 'admin_post_' . self::MOVE_HOSTNAME_ACTION, array( $this, 'handle_move_hostname' ) );
 		add_action( 'admin_post_' . self::DISMISS_HOSTNAME_ACTION, array( $this, 'handle_dismiss_hostname_move' ) );
 		add_action( 'admin_notices', array( $this, 'render_notice' ) );
@@ -541,6 +544,42 @@ class Settings {
 			</table>
 		<?php endif; ?>
 
+		<h2 style="margin-top:24px;"><?php echo esc_html__( 'Zone cache settings', 'smoxy' ); ?></h2>
+		<?php if ( ! ( $report['settings_ok'] ?? false ) ) : ?>
+			<?php $this->render_api_error( __( 'Could not read the zone cache settings.', 'smoxy' ), $report['settings_error'] ?? '' ); ?>
+		<?php else : ?>
+			<?php $settings_drifted = $this->has_settings_drift( $report ); ?>
+			<table class="widefat striped" style="max-width:960px;">
+				<thead><tr>
+					<th><?php echo esc_html__( 'Setting', 'smoxy' ); ?></th>
+					<th><?php echo esc_html__( 'Status', 'smoxy' ); ?></th>
+				</tr></thead>
+				<tbody>
+					<?php foreach ( $report['settings'] as $setting ) : ?>
+						<tr>
+							<td>
+								<strong><?php echo esc_html( (string) $setting['label'] ); ?></strong><br/>
+								<span class="description"><?php echo esc_html( (string) $setting['description'] ); ?></span>
+							</td>
+							<td>
+								<?php $this->render_status_badge( (string) $setting['status'], isset( $setting['diff'] ) ? (string) $setting['diff'] : '' ); ?>
+							</td>
+						</tr>
+					<?php endforeach; ?>
+				</tbody>
+			</table>
+			<?php if ( $settings_drifted ) : ?>
+				<p>
+					<span class="description"><?php echo esc_html__( 'These are applied automatically to zones the plugin creates. This zone was picked during setup, so nothing is changed until you apply it.', 'smoxy' ); ?></span>
+				</p>
+				<form action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" method="post">
+					<input type="hidden" name="action" value="<?php echo esc_attr( self::SYNC_SETTINGS_ACTION ); ?>"/>
+					<?php wp_nonce_field( self::SYNC_SETTINGS_ACTION ); ?>
+					<?php submit_button( __( 'Apply recommended settings', 'smoxy' ), 'secondary', 'submit', false ); ?>
+				</form>
+			<?php endif; ?>
+		<?php endif; ?>
+
 		<p style="margin-top:16px;">
 			<?php $this->render_disconnect_button( __( 'Disconnect from smoxy', 'smoxy' ) ); ?>
 		</p>
@@ -550,6 +589,18 @@ class Settings {
 		<h2><?php echo esc_html__( 'Cache', 'smoxy' ); ?></h2>
 		<?php $this->render_purge_controls(); ?>
 		<?php
+	}
+
+	/**
+	 * @param array<string,mixed> $report
+	 */
+	private function has_settings_drift( array $report ): bool {
+		foreach ( (array) ( $report['settings'] ?? array() ) as $setting ) {
+			if ( is_array( $setting ) && Audit::STATUS_OK !== ( $setting['status'] ?? Audit::STATUS_OK ) ) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	private function render_status_badge( string $status, string $detail ): void {
@@ -913,6 +964,55 @@ class Settings {
 					__( 'Rule "%s" is in sync.', 'smoxy' ),
 					$all[ $key ]['name']
 				),
+			)
+		);
+		$this->redirect_back();
+	}
+
+	public function handle_sync_zone_settings(): void {
+		$this->require_caps( self::SYNC_SETTINGS_ACTION );
+
+		$zone_id = self::get_zone_id();
+		if ( $zone_id <= 0 ) {
+			$this->flash(
+				array(
+					'ok'      => false,
+					'message' => __( 'No zone is connected.', 'smoxy' ),
+				)
+			);
+			$this->redirect_back();
+		}
+
+		$client = new Client( self::get_api_token() );
+
+		// Read the zone first so the content-type list is merged with what the
+		// zone already caches rather than replacing it.
+		$zone = $client->get_zone( $zone_id );
+		if ( ! $zone['ok'] ) {
+			$this->flash(
+				array(
+					'ok'      => false,
+					'message' => $zone['error'] ?? __( 'Could not read the zone cache settings.', 'smoxy' ),
+				)
+			);
+			$this->redirect_back();
+		}
+
+		$result = $client->patch_zone( $zone_id, ZoneSettings::payload( $zone['body'] ) );
+		if ( ! $result['ok'] ) {
+			$this->flash(
+				array(
+					'ok'      => false,
+					'message' => $result['error'] ?? __( 'Could not update the zone cache settings.', 'smoxy' ),
+				)
+			);
+			$this->redirect_back();
+		}
+
+		$this->flash(
+			array(
+				'ok'      => true,
+				'message' => __( 'Zone cache settings are in sync.', 'smoxy' ),
 			)
 		);
 		$this->redirect_back();

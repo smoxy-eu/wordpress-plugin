@@ -15,7 +15,7 @@ class Purger {
 	public function purge_all(): array {
 		return $this->send(
 			array(
-				'type' => 'flushall',
+				'type' => 'all',
 			),
 			__( 'All cached pages have been purged.', 'smoxy' )
 		);

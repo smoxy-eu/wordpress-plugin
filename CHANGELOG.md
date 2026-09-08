@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning 2.0.0](https://semver.org/spec/
 
 ## [Unreleased]
 
+### Added
+
+- Zone-level cache settings are now managed alongside the conditional rules, in `Setup\ZoneSettings`. Zones the plugin creates during setup get `cachingAdditionalContentTypes: ["css", "js", "font", "xml_text"]`, `cachingManagedIgnoredUrlParamsEnabled: true` and `stripCacheTagHeaders: true`. Caching stylesheets, JavaScript and fonts at the edge removes a large share of origin traffic on a typical WordPress site; the managed ignored-URL-param list collapses campaign-tagged URLs (`utm_*`, `gclid`, `fbclid`, ...) onto one cache entry; stripping the tag headers keeps the plugin's `X-Cache-Tags` out of visitor-facing responses. `json` is deliberately not enabled — WP REST responses are frequently per-user.
+- A zone the user picked during setup rather than created is never modified silently. `Audit` now reports each managed cache setting as OK or drifted, the settings page shows them in a new "Zone cache settings" table, and an "Apply recommended settings" button (new `smoxy_sync_zone_settings` admin-post action) applies them on request. `cachingAdditionalContentTypes` is compared as a subset rather than for equality, so a class the user enabled themselves is not drift and the repair sends the union instead of overwriting the list.
+- `Client::patch_zone()` — merge-PATCH against `/api/zones/{id}`, used by the one-click repair.
+- `tests/phpunit/ZoneSettingsTest.php` — first test coverage of the hub API client and audit layer (12 tests), stubbing the hub through `pre_http_request`.
+
+### Fixed
+
+- The `feed` cache tag had nothing to purge. The plugin tags feed responses and invalidates the tag on content changes, but RSS/Atom is only cacheable when the zone enables the `xml_text` content class, which the plugin never set. New zones now enable it, and existing zones surface it as drift.
+
+### Changed
+
+- Full-cache invalidation now sends `type: all` instead of `type: flushall`. `flushall` is the legacy spelling and keeps working upstream, so this is not a behavior change.
+- Zone creation in `Setup\Bootstrap` builds its cache settings from `Setup\ZoneSettings` rather than an inline payload, so creating a zone and repairing one cannot drift apart.
+
+### Compatibility
+
+- Verified against **WordPress 7.1** and **PHP 8.4 / 8.5**; `Tested up to` raised from 7.0 to 7.1. No code changes were needed. Each version was checked with a full activate/exercise/uninstall run under `WP_DEBUG` (no plugin diagnostics logged), the PHPUnit suite, PHPStan level 8, WPCS and PHPCompatibility. The plugin calls 44 PHP internal functions, none deprecated on either version, and neither the plugin nor the bundled `plugin-update-checker` emits the PHP 8.4 implicit-nullable deprecation.
+- CI now runs the PHPUnit and smoke matrices on PHP 8.4 and 8.5 in addition to 8.1–8.3.
+- Re-checked the plugin's 13 hub API endpoints against the current OpenAPI spec: no breaking changes, none deprecated, and request/response shapes, query parameters and condition enums all still match.
+- Purging deliberately stays on the edge BAN protocol. The hub's `POST /api/zones/{zoneId}/cache/clear` endpoint is rate-limited to one clear per zone every 5 seconds and is documented as unsuited to routine, application-driven invalidation.
+
+### Docs
+
+- `readme.txt`: new "Behind Cloudflare?" section — Cloudflare blocks `PURGE` outright and its DDoS protection may block `BAN`, so proxied sites need a DNS-only subdomain for invalidation traffic. Also corrected the External Services section, which still described the old `flushall` directive.
+
 ## [2.0.0] - 2026-07-05
 
 Major release: the plugin now talks to the new Smoxy Hub API. The previous `hub.smoxy.eu/api/v2` API was shut off upstream, so older plugin versions can no longer run the setup wizard, rule audit, or hostname management — updating is required. Edge-cache purging (BAN) is unaffected and keeps working on old and new versions alike.
