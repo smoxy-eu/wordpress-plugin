@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning 2.0.0](https://semver.org/spec/
 
 ## [Unreleased]
 
+### Security
+
+- Updated two development dependencies carrying high-severity advisories. Neither ships to users — the release build runs `composer install --no-dev` and the only runtime dependency is `plugin-update-checker` — but both are used by CI, which lints pull requests on a public repository.
+  - `wp-coding-standards/wpcs` 3.3.0 → 3.4.1 ([CVE-2026-45293](https://github.com/advisories/GHSA-3pwp-g2mj-5p3v), arbitrary code execution). The `WordPress.WP.EnqueuedResourceParameters` sniff passed the reconstructed `$ver` argument of `wp_enqueue_script()`/`wp_register_script()` through `eval()`, so scanning a crafted file executed it. This project uses the affected `WordPress-Extra` ruleset and runs WPCS on every pull request, so the vector was live: a fork PR containing `wp_enqueue_script( 'h', 's', array(), 'system'( ... ) )` would have run arbitrary commands on the CI runner. Confirmed by reproducing execution on 3.3.0 and confirming it no longer occurs on 3.4.1.
+  - `squizlabs/php_codesniffer` 3.13.5 → 3.13.6 ([CVE-2026-67434](https://github.com/advisories/GHSA-hmqg-cxww-wqhq), command injection through filenames containing shell metacharacters). Only the `Gitblame`, `Hgblame` and `Svnblame` reports are affected; every invocation here uses `--report=full`, so this one was not exploitable as configured.
+  - Pulled in as transitive updates: `phpcsstandards/phpcsutils` 1.2.3, `phpcsstandards/phpcsextra` 1.5.1, `dealerdirect/phpcodesniffer-composer-installer` v1.2.1. `composer.json` is unchanged — the existing constraints already allowed the patched releases — and no runtime dependency moved.
+
 ### Added
 
 - Zone-level cache settings are now managed alongside the conditional rules, in `Setup\ZoneSettings`. Zones the plugin creates during setup get `cachingAdditionalContentTypes: ["css", "js", "font", "xml_text"]`, `cachingManagedIgnoredUrlParamsEnabled: true` and `stripCacheTagHeaders: true`. Caching stylesheets, JavaScript and fonts at the edge removes a large share of origin traffic on a typical WordPress site; the managed ignored-URL-param list collapses campaign-tagged URLs (`utm_*`, `gclid`, `fbclid`, ...) onto one cache entry; stripping the tag headers keeps the plugin's `X-Cache-Tags` out of visitor-facing responses. `json` is deliberately not enabled — WP REST responses are frequently per-user.
