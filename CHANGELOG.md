@@ -7,18 +7,9 @@ and this project adheres to [Semantic Versioning 2.0.0](https://semver.org/spec/
 
 ## [Unreleased]
 
-### Security
+## [2.1.0] - 2026-09-08
 
-- Hardened the API token before it becomes a request header. `Settings::handle_save_token()` applied only `trim()`, which leaves interior CR/LF intact, so a crafted token could append arbitrary headers to every call the site makes to `api.smoxy.eu`. Confirmed by capturing the raw bytes on the wire, where the injected header appeared as its own line. Now uses `sanitize_text_field()`, which folds line breaks to a space and keeps the header value on one line. Exploiting it required `manage_options` and the admin's own token, so this is defence in depth rather than a privilege boundary — but it is a one-word fix, and a regression test now covers it.
-- Scoped the `phpcs:disable WordPress.Security.NonceVerification.Missing` comments in `Settings.php`. Each was opened without a matching `phpcs:enable`, so the first one silenced nonce checking from its line to the end of the file — roughly 470 lines covering eight of the ten admin-post handlers. No handler was actually missing its check (all ten call `require_caps()`, which verifies both the capability and the nonce), but the static safety net was off. Verified by appending an unguarded `$_POST` handler to the file: it produced no warnings before, and four errors after.
-- Enabled `WordPress.Security.ValidatedSanitizedInput`, which catches superglobals used without sanitizing or unslashing. It ships in the full `WordPress` ruleset but not in `WordPress-Extra`, so it had never run here; it is pulled in on its own rather than by switching rulesets, which would also drag in `WordPress-Docs`. It immediately flagged `$_POST['zone_choice']` and `$_POST['origin_choice']`, now sanitized with `sanitize_key()`. Both were only ever compared against string literals, so neither was exploitable.
-
-### Security
-
-- Updated two development dependencies carrying high-severity advisories. Neither ships to users — the release build runs `composer install --no-dev` and the only runtime dependency is `plugin-update-checker` — but both are used by CI, which lints pull requests on a public repository.
-  - `wp-coding-standards/wpcs` 3.3.0 → 3.4.1 ([CVE-2026-45293](https://github.com/advisories/GHSA-3pwp-g2mj-5p3v), arbitrary code execution). The `WordPress.WP.EnqueuedResourceParameters` sniff passed the reconstructed `$ver` argument of `wp_enqueue_script()`/`wp_register_script()` through `eval()`, so scanning a crafted file executed it. This project uses the affected `WordPress-Extra` ruleset and runs WPCS on every pull request, so the vector was live: a fork PR containing `wp_enqueue_script( 'h', 's', array(), 'system'( ... ) )` would have run arbitrary commands on the CI runner. Confirmed by reproducing execution on 3.3.0 and confirming it no longer occurs on 3.4.1.
-  - `squizlabs/php_codesniffer` 3.13.5 → 3.13.6 ([CVE-2026-67434](https://github.com/advisories/GHSA-hmqg-cxww-wqhq), command injection through filenames containing shell metacharacters). Only the `Gitblame`, `Hgblame` and `Svnblame` reports are affected; every invocation here uses `--report=full`, so this one was not exploitable as configured.
-  - Pulled in as transitive updates: `phpcsstandards/phpcsutils` 1.2.3, `phpcsstandards/phpcsextra` 1.5.1, `dealerdirect/phpcodesniffer-composer-installer` v1.2.1. `composer.json` is unchanged — the existing constraints already allowed the patched releases — and no runtime dependency moved.
+Adds managed zone-level cache settings with drift detection, verifies the plugin against WordPress 7.1 and PHP 8.4/8.5, and closes two high-severity advisories in the development toolchain. No breaking changes — upgrading is a drop-in replacement.
 
 ### Added
 
@@ -27,14 +18,24 @@ and this project adheres to [Semantic Versioning 2.0.0](https://semver.org/spec/
 - `Client::patch_zone()` — merge-PATCH against `/api/zones/{id}`, used by the one-click repair.
 - `tests/phpunit/ZoneSettingsTest.php` — first test coverage of the hub API client and audit layer (12 tests), stubbing the hub through `pre_http_request`.
 
-### Fixed
-
-- The `feed` cache tag had nothing to purge. The plugin tags feed responses and invalidates the tag on content changes, but RSS/Atom is only cacheable when the zone enables the `xml_text` content class, which the plugin never set. New zones now enable it, and existing zones surface it as drift.
-
 ### Changed
 
 - Full-cache invalidation now sends `type: all` instead of `type: flushall`. `flushall` is the legacy spelling and keeps working upstream, so this is not a behavior change.
 - Zone creation in `Setup\Bootstrap` builds its cache settings from `Setup\ZoneSettings` rather than an inline payload, so creating a zone and repairing one cannot drift apart.
+
+### Fixed
+
+- The `feed` cache tag had nothing to purge. The plugin tags feed responses and invalidates the tag on content changes, but RSS/Atom is only cacheable when the zone enables the `xml_text` content class, which the plugin never set. New zones now enable it, and existing zones surface it as drift.
+
+### Security
+
+- Hardened the API token before it becomes a request header. `Settings::handle_save_token()` applied only `trim()`, which leaves interior CR/LF intact, so a crafted token could append arbitrary headers to every call the site makes to `api.smoxy.eu`. Confirmed by capturing the raw bytes on the wire, where the injected header appeared as its own line. Now uses `sanitize_text_field()`, which folds line breaks to a space and keeps the header value on one line. Exploiting it required `manage_options` and the admin's own token, so this is defence in depth rather than a privilege boundary — but it is a one-word fix, and a regression test now covers it.
+- Scoped the `phpcs:disable WordPress.Security.NonceVerification.Missing` comments in `Settings.php`. Each was opened without a matching `phpcs:enable`, so the first one silenced nonce checking from its line to the end of the file — roughly 470 lines covering eight of the ten admin-post handlers. No handler was actually missing its check (all ten call `require_caps()`, which verifies both the capability and the nonce), but the static safety net was off. Verified by appending an unguarded `$_POST` handler to the file: it produced no warnings before, and four errors after.
+- Enabled `WordPress.Security.ValidatedSanitizedInput`, which catches superglobals used without sanitizing or unslashing. It ships in the full `WordPress` ruleset but not in `WordPress-Extra`, so it had never run here; it is pulled in on its own rather than by switching rulesets, which would also drag in `WordPress-Docs`. It immediately flagged `$_POST['zone_choice']` and `$_POST['origin_choice']`, now sanitized with `sanitize_key()`. Both were only ever compared against string literals, so neither was exploitable.
+- Updated two development dependencies carrying high-severity advisories. Neither ships to users — the release build runs `composer install --no-dev` and the only runtime dependency is `plugin-update-checker` — but both are used by CI, which lints pull requests on a public repository.
+  - `wp-coding-standards/wpcs` 3.3.0 → 3.4.1 ([CVE-2026-45293](https://github.com/advisories/GHSA-3pwp-g2mj-5p3v), arbitrary code execution). The `WordPress.WP.EnqueuedResourceParameters` sniff passed the reconstructed `$ver` argument of `wp_enqueue_script()`/`wp_register_script()` through `eval()`, so scanning a crafted file executed it. This project uses the affected `WordPress-Extra` ruleset and runs WPCS on every pull request, so the vector was live: a fork PR containing `wp_enqueue_script( 'h', 's', array(), 'system'( ... ) )` would have run arbitrary commands on the CI runner. Confirmed by reproducing execution on 3.3.0 and confirming it no longer occurs on 3.4.1.
+  - `squizlabs/php_codesniffer` 3.13.5 → 3.13.6 ([CVE-2026-67434](https://github.com/advisories/GHSA-hmqg-cxww-wqhq), command injection through filenames containing shell metacharacters). Only the `Gitblame`, `Hgblame` and `Svnblame` reports are affected; every invocation here uses `--report=full`, so this one was not exploitable as configured.
+  - Pulled in as transitive updates: `phpcsstandards/phpcsutils` 1.2.3, `phpcsstandards/phpcsextra` 1.5.1, `dealerdirect/phpcodesniffer-composer-installer` v1.2.1. `composer.json` is unchanged — the existing constraints already allowed the patched releases — and no runtime dependency moved.
 
 ### Compatibility
 
@@ -48,7 +49,6 @@ and this project adheres to [Semantic Versioning 2.0.0](https://semver.org/spec/
 ### Docs
 
 - `readme.txt`: new "Behind Cloudflare?" section — Cloudflare blocks `PURGE` outright and its DDoS protection may block `BAN`, so proxied sites need a DNS-only subdomain for invalidation traffic. Also corrected the External Services section, which still described the old `flushall` directive.
-
 ## [2.0.0] - 2026-07-05
 
 Major release: the plugin now talks to the new Smoxy Hub API. The previous `hub.smoxy.eu/api/v2` API was shut off upstream, so older plugin versions can no longer run the setup wizard, rule audit, or hostname management — updating is required. Edge-cache purging (BAN) is unaffected and keeps working on old and new versions alike.
@@ -107,7 +107,8 @@ Initial public release. Connects WordPress to the [smoxy](https://www.smoxy.eu) 
 - GitHub Actions workflows: `lint`, `phpunit`, `plugin-check`, `smoke`, and `release` (builds zip + tar.gz on `v*` tag push and publishes a GitHub Release).
 - `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md`, `CHANGELOG.md`.
 
-[Unreleased]: https://github.com/smoxy-eu/wordpress-plugin/compare/v2.0.0...HEAD
+[Unreleased]: https://github.com/smoxy-eu/wordpress-plugin/compare/v2.1.0...HEAD
+[2.1.0]: https://github.com/smoxy-eu/wordpress-plugin/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/smoxy-eu/wordpress-plugin/compare/v1.1.0...v2.0.0
 [1.1.0]: https://github.com/smoxy-eu/wordpress-plugin/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/smoxy-eu/wordpress-plugin/compare/v1.0.0...v1.0.1

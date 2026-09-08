@@ -2,6 +2,8 @@
 /.github
 /.distignore
 /.gitignore
+/.claude
+/.claude-*
 /.wp-env.json
 /.phpunit.result.cache
 /CHANGELOG.md
