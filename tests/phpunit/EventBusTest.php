@@ -324,7 +324,7 @@ class EventBusTest extends WP_UnitTestCase {
 
 		$this->assertCount( 1, $this->http_calls );
 		$headers = $this->http_calls[0]['args']['headers'] ?? array();
-		$this->assertSame( 'flushall', $headers['type'] ?? null );
+		$this->assertSame( 'all', $headers['type'] ?? null );
 	}
 
 	/**
@@ -336,7 +336,7 @@ class EventBusTest extends WP_UnitTestCase {
 
 		$this->assertCount( 1, $this->http_calls );
 		$headers = $this->http_calls[0]['args']['headers'] ?? array();
-		$this->assertSame( 'flushall', $headers['type'] ?? null );
+		$this->assertSame( 'all', $headers['type'] ?? null );
 		$this->assertArrayNotHasKey( 'tags', $headers );
 	}
 
@@ -372,7 +372,7 @@ class EventBusTest extends WP_UnitTestCase {
 
 		$this->assertCount( 1, $this->http_calls );
 		$headers = $this->http_calls[0]['args']['headers'] ?? array();
-		$this->assertSame( 'flushall', $headers['type'] ?? null );
+		$this->assertSame( 'all', $headers['type'] ?? null );
 	}
 
 	/**
@@ -415,7 +415,7 @@ class EventBusTest extends WP_UnitTestCase {
 
 		$this->assertCount( 1, $this->http_calls );
 		$headers = $this->http_calls[0]['args']['headers'] ?? array();
-		$this->assertSame( 'flushall', $headers['type'] ?? null );
+		$this->assertSame( 'all', $headers['type'] ?? null );
 		$this->assertArrayNotHasKey( 'tags', $headers );
 	}
 

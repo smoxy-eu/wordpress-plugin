@@ -7,10 +7,10 @@ use Smoxy\WP\Api\Client;
 defined( 'ABSPATH' ) || exit;
 
 /**
- * Compares the expected configuration rules (from RuleDefinitions) against
- * what's actually configured on the bound zone, surfacing missing rules
- * and drift so the settings page can show a status report and offer a
- * one-click fix.
+ * Compares the expected configuration rules (from RuleDefinitions) and the
+ * managed zone-level cache settings (from ZoneSettings) against what's
+ * actually configured on the bound zone, surfacing missing rules and drift
+ * so the settings page can show a status report and offer a one-click fix.
  */
 class Audit {
 
@@ -26,15 +26,20 @@ class Audit {
 	}
 
 	/**
-	 * @return array{ok:bool, error:?string, rules:array<string, array{key:string, expected_name:string, status:string, remote_id:?string, remote_order:?int, diff:?string}>}
+	 * @return array{ok:bool, error:?string, rules:array<string, array{key:string, expected_name:string, status:string, remote_id:?string, remote_order:?int, diff:?string}>, settings:array<string, array{field:string, label:string, description:string, status:string, diff:?string}>, settings_ok:bool, settings_error:?string}
 	 */
 	public function audit_zone( int $zone_id ): array {
+		$settings_report = $this->audit_settings( $zone_id );
+
 		$response = $this->client->list_configuration_rules( $zone_id );
 		if ( ! $response['ok'] ) {
 			return array(
-				'ok'    => false,
-				'error' => $response['error'],
-				'rules' => array(),
+				'ok'             => false,
+				'error'          => $response['error'],
+				'rules'          => array(),
+				'settings'       => $settings_report['settings'],
+				'settings_ok'    => $settings_report['ok'],
+				'settings_error' => $settings_report['error'],
 			);
 		}
 
@@ -53,10 +58,82 @@ class Audit {
 		}
 
 		return array(
-			'ok'    => true,
-			'error' => null,
-			'rules' => $report,
+			'ok'             => true,
+			'error'          => null,
+			'rules'          => $report,
+			'settings'       => $settings_report['settings'],
+			'settings_ok'    => $settings_report['ok'],
+			'settings_error' => $settings_report['error'],
 		);
+	}
+
+	/**
+	 * Reads the bound zone and reports each managed cache setting as OK or
+	 * drifted. Zone-level settings are never auto-corrected — a zone the user
+	 * picked rather than created may carry deliberate choices — so this only
+	 * feeds the status table and the one-click fix.
+	 *
+	 * @return array{ok:bool, error:?string, settings:array<string, array{field:string, label:string, description:string, status:string, diff:?string}>}
+	 */
+	private function audit_settings( int $zone_id ): array {
+		$response = $this->client->get_zone( $zone_id );
+		if ( ! $response['ok'] ) {
+			return array(
+				'ok'       => false,
+				'error'    => $response['error'],
+				'settings' => array(),
+			);
+		}
+
+		$remote = $response['body'];
+		$report = array();
+		foreach ( ZoneSettings::managed() as $field => $spec ) {
+			$diff             = $this->find_setting_drift( $field, $spec, $remote );
+			$report[ $field ] = array(
+				'field'       => $field,
+				'label'       => $spec['label'],
+				'description' => $spec['description'],
+				'status'      => null === $diff ? self::STATUS_OK : self::STATUS_DRIFTED,
+				'diff'        => $diff,
+			);
+		}
+
+		return array(
+			'ok'       => true,
+			'error'    => null,
+			'settings' => $report,
+		);
+	}
+
+	/**
+	 * @param array{label:string, description:string, value:mixed, subset:bool} $spec
+	 * @param array<int|string,mixed>                                           $remote
+	 */
+	private function find_setting_drift( string $field, array $spec, array $remote ): ?string {
+		$actual = $remote[ $field ] ?? null;
+
+		// List-valued settings are a floor, not an exact match: classes the
+		// user enabled on top are theirs to keep.
+		if ( $spec['subset'] ) {
+			$have    = is_array( $actual ) ? array_map( 'strval', $actual ) : array();
+			$missing = array_values( array_diff( (array) $spec['value'], $have ) );
+			if ( empty( $missing ) ) {
+				return null;
+			}
+			return sprintf(
+				/* translators: %s: comma-separated list of content type classes */
+				__( 'Not cached at the edge: %s', 'smoxy' ),
+				implode( ', ', $missing )
+			);
+		}
+
+		if ( $this->normalize_bool( $actual ) === $spec['value'] ) {
+			return null;
+		}
+
+		return true === $spec['value']
+			? __( 'Disabled on the zone.', 'smoxy' )
+			: __( 'Enabled on the zone.', 'smoxy' );
 	}
 
 	/**

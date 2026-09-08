@@ -20,9 +20,17 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # Lowest row is the floor the plugin declares (Requires PHP: 8.0).
+          # PHP 8.0/8.1 are EOL upstream but still run ~15% of WordPress
+          # installs, and `Requires PHP` gates updates — so they stay tested.
+          - { php: '8.0', wp: 'latest' }
           - { php: '8.1', wp: 'latest' }
           - { php: '8.2', wp: 'latest' }
           - { php: '8.3', wp: 'latest' }
+          - { php: '8.4', wp: 'latest' }
+          - { php: '8.5', wp: 'latest' }
+          # Oldest supported WordPress (Requires at least: 6.0) on the PHP floor.
+          - { php: '8.0', wp: '6.0' }
     services:
       mysql:
         image: mysql:8.4
@@ -94,7 +102,7 @@ jobs:
           retention-days: 7
 
   smoke-trunk:
-    name: PHP 8.3 / WP trunk (allowed to fail)
+    name: PHP 8.5 / WP trunk (allowed to fail)
     runs-on: ubuntu-latest
     continue-on-error: true
     services:
@@ -114,7 +122,7 @@ jobs:
       - uses: actions/checkout@v5
       - uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.3'
+          php-version: '8.5'
           coverage: none
           extensions: mysqli, mbstring, xml
           tools: composer:v2, wp-cli

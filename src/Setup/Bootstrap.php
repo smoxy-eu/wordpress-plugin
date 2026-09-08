@@ -69,18 +69,24 @@ class Bootstrap {
 				return $this->fail( __( 'Pick an existing origin or fill in the new-origin fields.', 'smoxy' ) );
 			}
 
-			$zone_payload = array(
-				'organization'          => '/api/organizations/' . $organization_id,
-				'name'                  => $input['new_zone_name'] ?? '',
-				'tag'                   => $input['new_zone_tag'] ?? 'prod',
-				'defaultBackend'        => array(
-					'type' => 'origin',
-					'id'   => $origin_id,
+			// The zone-level cache settings live in ZoneSettings so that
+			// creating a zone here and repairing a user-picked zone from the
+			// settings page can never drift apart.
+			$zone_payload = array_merge(
+				array(
+					'organization'          => '/api/organizations/' . $organization_id,
+					'name'                  => $input['new_zone_name'] ?? '',
+					'tag'                   => $input['new_zone_tag'] ?? 'prod',
+					'defaultBackend'        => array(
+						'type' => 'origin',
+						'id'   => $origin_id,
+					),
+					'enabled'               => true,
+					'securityEnabled'       => true,
+					'cachingDynamicEnabled' => true,
+					'cachingStaticEnabled'  => true,
 				),
-				'enabled'               => true,
-				'securityEnabled'       => true,
-				'cachingDynamicEnabled' => true,
-				'cachingStaticEnabled'  => true,
+				ZoneSettings::payload()
 			);
 
 			$zone_result = $this->client->create_zone( $zone_payload );
