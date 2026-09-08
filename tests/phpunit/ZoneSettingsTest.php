@@ -16,7 +16,7 @@ use Smoxy\WP\Setup\ZoneSettings;
 class ZoneSettingsTest extends WP_UnitTestCase {
 
 
-	/** @var array<int,array{url:string,method:string,body:mixed}> */
+	/** @var array<int,array{url:string,method:string,token:string,body:mixed}> */
 	private array $api_calls = array();
 
 	/** @var array<string,mixed> */
@@ -66,6 +66,7 @@ class ZoneSettingsTest extends WP_UnitTestCase {
 		$this->api_calls[] = array(
 			'url'    => $url,
 			'method' => (string) ( $args['method'] ?? '' ),
+			'token'  => (string) ( $args['headers']['X-API-TOKEN'] ?? '' ),
 			'body'   => isset( $args['body'] ) ? json_decode( (string) $args['body'], true ) : null,
 		);
 
@@ -245,6 +246,40 @@ class ZoneSettingsTest extends WP_UnitTestCase {
 		foreach ( ZoneSettings::content_types() as $expected ) {
 			$this->assertContains( $expected, $sent[ ZoneSettings::FIELD_CONTENT_TYPES ] );
 		}
+	}
+
+	/* ------------------------------------------------------------------
+	 * Token handling
+	 * ------------------------------------------------------------------ */
+
+	/**
+	 * The API token is sent as the X-API-TOKEN request header, so CR/LF in it
+	 * would let a crafted value append arbitrary headers to every hub call.
+	 * trim() left those bytes intact; sanitize_text_field() strips them.
+	 */
+	public function test_saved_api_token_cannot_carry_crlf_into_request_headers(): void {
+		wp_set_current_user( $this->admin_id );
+		$_REQUEST['_wpnonce'] = wp_create_nonce( Settings::SAVE_TOKEN_ACTION );
+		$_POST['api_token']   = "good-token\r\nX-Injected: pwned";
+
+		try {
+			( new Settings() )->handle_save_token();
+		} catch ( SmoxyRedirectException $e ) {
+			unset( $e );
+		}
+
+		$sent = '';
+		foreach ( $this->api_calls as $call ) {
+			$sent = $call['token'] ?? $sent;
+		}
+
+		$this->assertNotSame( '', $sent, 'The handler should have probed the hub with the token' );
+		// The security property is that the value cannot span lines. The
+		// injected text itself survives as inert characters — sanitize_text_field()
+		// folds CR/LF to a space rather than dropping the surrounding content.
+		$this->assertStringNotContainsString( "\r", $sent, 'CR must not survive into the header value' );
+		$this->assertStringNotContainsString( "\n", $sent, 'LF must not survive into the header value' );
+		$this->assertCount( 1, preg_split( '/\R/', $sent ), 'The header value must stay a single line' );
 	}
 
 	public function test_apply_is_blocked_for_non_admins(): void {

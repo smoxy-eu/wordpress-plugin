@@ -205,6 +205,7 @@ class CacheTagsTest extends WP_UnitTestCase {
 		$this->go_to( (string) get_permalink( $post_id ) );
 		CacheTagsTestHeaderCapture::reset();
 
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- Saved verbatim so the original value can be restored; sanitizing would corrupt it.
 		$previous                  = $_SERVER['REQUEST_METHOD'] ?? null;
 		$_SERVER['REQUEST_METHOD'] = 'POST';
 		try {

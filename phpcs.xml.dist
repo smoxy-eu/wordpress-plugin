@@ -35,6 +35,11 @@
 		<exclude-pattern>tests/*</exclude-pattern>
 	</rule>
 
+	<!-- Catches superglobals used without sanitization/unslashing. It ships in
+	     the full "WordPress" ruleset but not in WordPress-Extra, so pull it in
+	     explicitly rather than taking WordPress-Docs along with it. -->
+	<rule ref="WordPress.Security.ValidatedSanitizedInput"/>
+
 	<rule ref="WordPress.WP.I18n">
 		<properties>
 			<property name="text_domain" type="array">

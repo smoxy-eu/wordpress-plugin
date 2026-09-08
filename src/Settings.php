@@ -728,7 +728,10 @@ class Settings {
 		// Nonce + capability verified in require_caps().
 		// phpcs:disable WordPress.Security.NonceVerification.Missing
 		$this->require_caps( self::SAVE_TOKEN_ACTION );
-		$token = isset( $_POST['api_token'] ) ? trim( (string) wp_unslash( $_POST['api_token'] ) ) : '';
+		// sanitize_text_field(), not trim(): the token is sent as an
+		// X-API-TOKEN request header, and trim() leaves interior CR/LF intact.
+		$token = isset( $_POST['api_token'] ) ? sanitize_text_field( wp_unslash( $_POST['api_token'] ) ) : '';
+		// phpcs:enable WordPress.Security.NonceVerification.Missing
 		if ( '' === $token ) {
 			$this->flash(
 				array(
@@ -777,7 +780,7 @@ class Settings {
 		$this->require_caps( self::CONNECT_ACTION );
 
 		$org_id      = isset( $_POST['organization_id'] ) ? (int) $_POST['organization_id'] : 0;
-		$zone_choice = isset( $_POST['zone_choice'] ) ? (string) wp_unslash( $_POST['zone_choice'] ) : '';
+		$zone_choice = isset( $_POST['zone_choice'] ) ? sanitize_key( wp_unslash( $_POST['zone_choice'] ) ) : '';
 
 		if ( $org_id <= 0 ) {
 			$this->flash(
@@ -823,7 +826,7 @@ class Settings {
 			$new_zone_tag           = isset( $_POST['new_zone_tag'] ) ? sanitize_text_field( wp_unslash( $_POST['new_zone_tag'] ) ) : 'prod';
 			$input['new_zone_tag']  = in_array( $new_zone_tag, array( 'prod', 'stage', 'dev' ), true ) ? $new_zone_tag : 'prod';
 
-			$origin_choice = isset( $_POST['origin_choice'] ) ? (string) wp_unslash( $_POST['origin_choice'] ) : '';
+			$origin_choice = isset( $_POST['origin_choice'] ) ? sanitize_key( wp_unslash( $_POST['origin_choice'] ) ) : '';
 			if ( 'existing' === $origin_choice ) {
 				$origin_id          = isset( $_POST['origin_id'] ) ? sanitize_text_field( wp_unslash( $_POST['origin_id'] ) ) : '';
 				$input['origin_id'] = '' !== $origin_id ? $origin_id : null;
@@ -844,6 +847,7 @@ class Settings {
 					'port'            => isset( $_POST['new_origin_port'] ) ? (int) $_POST['new_origin_port'] : 443,
 					'requestHostname' => isset( $_POST['new_origin_request_host'] ) ? sanitize_text_field( wp_unslash( $_POST['new_origin_request_host'] ) ) : null,
 				);
+				// phpcs:enable WordPress.Security.NonceVerification.Missing
 				if ( null !== $input['new_origin']['requestHostname'] && '' === $input['new_origin']['requestHostname'] ) {
 					$input['new_origin']['requestHostname'] = null;
 				}
@@ -910,6 +914,7 @@ class Settings {
 		// phpcs:disable WordPress.Security.NonceVerification.Missing
 		$this->require_caps( self::RECREATE_RULE_ACTION );
 		$key = isset( $_POST['rule_key'] ) ? sanitize_key( wp_unslash( $_POST['rule_key'] ) ) : '';
+		// phpcs:enable WordPress.Security.NonceVerification.Missing
 		$all = RuleDefinitions::all();
 		if ( ! isset( $all[ $key ] ) ) {
 			$this->flash(
@@ -1097,7 +1102,8 @@ class Settings {
 		// Nonce + capability verified in require_caps().
 		// phpcs:disable WordPress.Security.NonceVerification.Missing
 		$this->require_caps( self::PURGE_URL_ACTION );
-		$url    = isset( $_POST['smoxy_purge_url'] ) ? sanitize_text_field( wp_unslash( $_POST['smoxy_purge_url'] ) ) : '';
+		$url = isset( $_POST['smoxy_purge_url'] ) ? sanitize_text_field( wp_unslash( $_POST['smoxy_purge_url'] ) ) : '';
+		// phpcs:enable WordPress.Security.NonceVerification.Missing
 		$result = ( new Purger() )->purge_url( $url );
 		$this->flash( $result );
 		$this->redirect_back();
@@ -1108,7 +1114,8 @@ class Settings {
 		// phpcs:disable WordPress.Security.NonceVerification.Missing
 		$this->require_caps( self::PURGE_TAG_ACTION );
 
-		$raw  = isset( $_POST['smoxy_purge_tag'] ) ? sanitize_text_field( wp_unslash( $_POST['smoxy_purge_tag'] ) ) : '';
+		$raw = isset( $_POST['smoxy_purge_tag'] ) ? sanitize_text_field( wp_unslash( $_POST['smoxy_purge_tag'] ) ) : '';
+		// phpcs:enable WordPress.Security.NonceVerification.Missing
 		$tags = array_values(
 			array_filter(
 				array_map( 'trim', explode( ',', $raw ) ),
