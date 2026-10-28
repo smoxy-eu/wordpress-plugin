@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning 2.0.0](https://semver.org/spec/
 
 ## [Unreleased]
 
+### Changed
+
+- Releases publish themselves once the version bump is merged: when a version without a tag reaches `main`, the release workflow creates the `vX.Y.Z` tag on that commit and publishes the GitHub Release, so a release no longer needs a tag pushed by hand. The release notes are now the version's section of this changelog, followed by GitHub's list of merged pull requests, so the update details a site shows for a new version describe what changed rather than listing pull request titles.
+
 ## [2.1.0] - 2026-09-08
 
 Adds managed zone-level cache settings with drift detection, verifies the plugin against WordPress 7.1 and PHP 8.4/8.5, and closes two high-severity advisories in the development toolchain. No breaking changes — upgrading is a drop-in replacement.
