@@ -34,7 +34,7 @@ jobs:
           - { php: '8.0', wp: '6.0' }
     services:
       mysql:
-        image: mysql:8.4
+        image: mysql:9.7
         env:
           MYSQL_ROOT_PASSWORD: root
           MYSQL_DATABASE: wordpress_test
@@ -74,7 +74,7 @@ jobs:
     continue-on-error: true
     services:
       mysql:
-        image: mysql:8.4
+        image: mysql:9.7
         env:
           MYSQL_ROOT_PASSWORD: root
           MYSQL_DATABASE: wordpress_test
