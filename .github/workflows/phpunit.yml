@@ -12,6 +12,9 @@ concurrency:
   group: phpunit-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
+permissions:
+  contents: read
+
 jobs:
   phpunit:
     name: PHP ${{ matrix.php }} / WP ${{ matrix.wp }}
