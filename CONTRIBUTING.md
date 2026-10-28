@@ -93,23 +93,15 @@ docs(readme): bump minimum WP to 6.0 and note tested up to 6.9
 
 ## Releasing (maintainers)
 
-Releases are fully automated by the `Makefile` + GitHub Actions:
+Merging a version bump into `main` publishes the release:
 
-1. Make sure `main` is green, your working tree is clean, and you're on `main`.
-2. Choose a bump:
-   ```bash
-   make release-patch   # 0.1.0 -> 0.1.1
-   make release-minor   # 0.1.0 -> 0.2.0
-   make release-major   # 0.1.0 -> 1.0.0
-   ```
-3. The target will:
-   - Rewrite the version in `smoxy.php` (header + `SMOXY_VERSION` constant) and `readme.txt` (`Stable tag:`)
-   - Commit (`chore(release): vX.Y.Z`)
-   - Create an annotated tag (`vX.Y.Z`)
-   - Push the commit and the tag to `origin`
-4. The push of the tag triggers `.github/workflows/release.yml`, which builds `smoxy-X.Y.Z.zip` + `smoxy-X.Y.Z.tar.gz`, generates `SHA256SUMS.txt`, and publishes a GitHub Release.
+1. On a branch from `main`, move the `## [Unreleased]` entries in [`CHANGELOG.md`](CHANGELOG.md) under a new `## [X.Y.Z] - YYYY-MM-DD` heading (and update the link references at the bottom), then bump the version in `smoxy.php` (header + `SMOXY_VERSION` constant) and `readme.txt` (`Stable tag:`). The three must match.
+2. Open a PR titled `chore(release): vX.Y.Z` and merge it once CI is green.
+3. On the push to `main`, `.github/workflows/release.yml` finds a version that has no tag yet: it creates the `vX.Y.Z` tag on the merge commit, builds `smoxy-X.Y.Z.zip` + `smoxy-X.Y.Z.tar.gz`, generates `SHA256SUMS.txt`, and publishes a GitHub Release whose notes are the version's changelog section. Sites pick the update up through plugin-update-checker.
 
-Before releasing, move the `## [Unreleased]` entries in [`CHANGELOG.md`](CHANGELOG.md) under a new `## [X.Y.Z] - YYYY-MM-DD` heading and commit that change.
+Pushing a `vX.Y.Z` tag, or running the workflow by hand with an existing tag, (re)builds that release.
+
+A scheduled Claude Code routine maintains this repository: it fixes failing pipelines, applies dependency and security updates, keeps CI and the `Tested up to` header current with new WordPress and PHP releases, and cuts patch and minor releases this way. Its pull requests and issues carry the `maintenance` label; anything it needs a maintainer for is labeled `needs-owner`.
 
 ## License
 
