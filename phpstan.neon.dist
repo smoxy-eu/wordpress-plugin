@@ -7,7 +7,7 @@ parameters:
         - uninstall.php
     excludePaths:
         - vendor
-        - node_modules
+        - node_modules (?)
         - languages
-        - .wordpress-org
+        - .wordpress-org (?)
     treatPhpDocTypesAsCertain: false
