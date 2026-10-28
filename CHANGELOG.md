@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning 2.0.0](https://semver.org/spec/
 ### Changed
 
 - Releases publish themselves once the version bump is merged: when a version without a tag reaches `main`, the release workflow creates the `vX.Y.Z` tag on that commit and publishes the GitHub Release, so a release no longer needs a tag pushed by hand. The release notes are now the version's section of this changelog, followed by GitHub's list of merged pull requests, so the update details a site shows for a new version describe what changed rather than listing pull request titles.
+- `yahnis-elsts/plugin-update-checker` 5.6 → 5.7, the library that delivers plugin updates from GitHub Releases. The upstream release replaces `wp_redirect()` and `htmlentities()` with `wp_safe_redirect()` and `esc_html()`, adds an opt-in `autoupdate` field, and drops Bitbucket OAuth 1 support, which this plugin does not use (it only talks to GitHub). 5.7 renames the library's versioned namespace from `v5p6` to `v5p7`, so the `enableReleaseAssets()` setup in `smoxy.php` now names `v5p7`; the package was installed into a WordPress site and the updater was confirmed to load. No action is needed on a site.
 
 ## [2.1.0] - 2026-09-08
 
