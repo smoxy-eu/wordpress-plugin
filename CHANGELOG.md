@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning 2.0.0](https://semver.org/spec/
 
 ## [Unreleased]
 
+## [2.1.1] - 2026-10-28
+
+Updates the bundled update checker library to 5.7 and makes releases publish themselves. No breaking changes — upgrading is a drop-in replacement and needs no action on a site.
+
 ### Changed
 
 - Releases publish themselves once the version bump is merged: when a version without a tag reaches `main`, the release workflow creates the `vX.Y.Z` tag on that commit and publishes the GitHub Release, so a release no longer needs a tag pushed by hand. The release notes are now the version's section of this changelog, followed by GitHub's list of merged pull requests, so the update details a site shows for a new version describe what changed rather than listing pull request titles.
@@ -112,7 +116,8 @@ Initial public release. Connects WordPress to the [smoxy](https://www.smoxy.eu) 
 - GitHub Actions workflows: `lint`, `phpunit`, `plugin-check`, `smoke`, and `release` (builds zip + tar.gz on `v*` tag push and publishes a GitHub Release).
 - `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md`, `CHANGELOG.md`.
 
-[Unreleased]: https://github.com/smoxy-eu/wordpress-plugin/compare/v2.1.0...HEAD
+[Unreleased]: https://github.com/smoxy-eu/wordpress-plugin/compare/v2.1.1...HEAD
+[2.1.1]: https://github.com/smoxy-eu/wordpress-plugin/compare/v2.1.0...v2.1.1
 [2.1.0]: https://github.com/smoxy-eu/wordpress-plugin/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/smoxy-eu/wordpress-plugin/compare/v1.1.0...v2.0.0
 [1.1.0]: https://github.com/smoxy-eu/wordpress-plugin/compare/v1.0.1...v1.1.0
