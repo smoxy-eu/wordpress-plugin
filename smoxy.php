@@ -32,9 +32,9 @@ if ( is_readable( $smoxy_composer_autoload ) ) {
 			SMOXY_PLUGIN_FILE,
 			'smoxy'
 		);
-		if ( $smoxy_update_checker instanceof \YahnisElsts\PluginUpdateChecker\v5p6\Vcs\BaseChecker ) {
+		if ( $smoxy_update_checker instanceof \YahnisElsts\PluginUpdateChecker\v5p7\Vcs\BaseChecker ) {
 			$smoxy_vcs_api = $smoxy_update_checker->getVcsApi();
-			if ( $smoxy_vcs_api instanceof \YahnisElsts\PluginUpdateChecker\v5p6\Vcs\GitHubApi ) {
+			if ( $smoxy_vcs_api instanceof \YahnisElsts\PluginUpdateChecker\v5p7\Vcs\GitHubApi ) {
 				$smoxy_vcs_api->enableReleaseAssets( '/^smoxy-\d+\.\d+\.\d+\.zip$/' );
 			}
 			unset( $smoxy_vcs_api );
