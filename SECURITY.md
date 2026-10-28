@@ -37,8 +37,8 @@ Only the latest minor release line receives security fixes.
 
 | Version  | Status              |
 | -------- | ------------------- |
-| `0.1.x`  | ✅ Supported         |
-| `< 0.1`  | ❌ Not supported     |
+| `2.1.x`  | ✅ Supported         |
+| `< 2.1`  | ❌ Not supported     |
 
 If you're running an unsupported version, the fix is to upgrade.
 
