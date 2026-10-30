@@ -81,7 +81,7 @@ All of this lives at the edge, in front of your origin, so attack traffic never 
 
 ## Requirements
 
-- WordPress 6.0 or newer (tested up to 7.0)
+- WordPress 6.0 or newer (tested up to 7.1)
 - PHP 8.0 or newer
 - A [smoxy account](https://hub.smoxy.eu) — free to create — with a Zone configured for your domain
 
