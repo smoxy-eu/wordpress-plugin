@@ -26,15 +26,15 @@ $smoxy_composer_autoload = SMOXY_PLUGIN_DIR . 'vendor/autoload.php';
 if ( is_readable( $smoxy_composer_autoload ) ) {
 	require_once $smoxy_composer_autoload;
 
-	if ( class_exists( \YahnisElsts\PluginUpdateChecker\v5\PucFactory::class ) ) {
-		$smoxy_update_checker = \YahnisElsts\PluginUpdateChecker\v5\PucFactory::buildUpdateChecker(
+	if ( class_exists( \YahnisElsts\PluginUpdateChecker\v6\PucFactory::class ) ) {
+		$smoxy_update_checker = \YahnisElsts\PluginUpdateChecker\v6\PucFactory::buildUpdateChecker(
 			'https://github.com/smoxy-eu/wordpress-plugin/',
 			SMOXY_PLUGIN_FILE,
 			'smoxy'
 		);
-		if ( $smoxy_update_checker instanceof \YahnisElsts\PluginUpdateChecker\v5p7\Vcs\BaseChecker ) {
+		if ( $smoxy_update_checker instanceof \YahnisElsts\PluginUpdateChecker\v6p0\Vcs\BaseChecker ) {
 			$smoxy_vcs_api = $smoxy_update_checker->getVcsApi();
-			if ( $smoxy_vcs_api instanceof \YahnisElsts\PluginUpdateChecker\v5p7\Vcs\GitHubApi ) {
+			if ( $smoxy_vcs_api instanceof \YahnisElsts\PluginUpdateChecker\v6p0\Vcs\GitHubApi ) {
 				$smoxy_vcs_api->enableReleaseAssets( '/^smoxy-\d+\.\d+\.\d+\.zip$/' );
 			}
 			unset( $smoxy_vcs_api );
