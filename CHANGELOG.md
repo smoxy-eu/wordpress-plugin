@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning 2.0.0](https://semver.org/spec/
 
 ## [Unreleased]
 
+### Changed
+
+- `yahnis-elsts/plugin-update-checker` 5.7 → 6.0, the library that delivers plugin updates from GitHub Releases. 6.0 is a major release of the library, but its changes do not touch how this plugin uses it: it raises the library's own minimum to PHP 7.4 (the plugin requires 8.0) and moves the factory namespace from `v5` to `v6`. The versioned namespace is now `v6p0`, so the `PucFactory` and `enableReleaseAssets()` setup in `smoxy.php` names `v6` and `v6p0`; without that change the release-asset setup would have been skipped silently and sites would have stopped receiving updates. The built plugin zip was installed into a WordPress site to confirm the updater loads. No action is needed on a site.
+
 ## [2.1.1] - 2026-10-28
 
 Updates the bundled update checker library to 5.7 and makes releases publish themselves. No breaking changes — upgrading is a drop-in replacement and needs no action on a site.

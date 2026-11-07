@@ -6,7 +6,7 @@
   "homepage": "https://www.smoxy.eu",
   "require": {
     "php": ">=8.0",
-    "yahnis-elsts/plugin-update-checker": "^5.4"
+    "yahnis-elsts/plugin-update-checker": "^6.0"
   },
   "require-dev": {
     "dealerdirect/phpcodesniffer-composer-installer": "^1.0",
