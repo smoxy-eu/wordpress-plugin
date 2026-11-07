@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning 2.0.0](https://semver.org/spec/
 
 ## [Unreleased]
 
+## [2.1.2] - 2026-11-07
+
+Updates the bundled update checker library to 6.0. No breaking changes — upgrading is a drop-in replacement and needs no action on a site.
+
 ### Changed
 
 - `yahnis-elsts/plugin-update-checker` 5.7 → 6.0, the library that delivers plugin updates from GitHub Releases. 6.0 is a major release of the library, but its changes do not touch how this plugin uses it: it raises the library's own minimum to PHP 7.4 (the plugin requires 8.0) and moves the factory namespace from `v5` to `v6`. The versioned namespace is now `v6p0`, so the `PucFactory` and `enableReleaseAssets()` setup in `smoxy.php` names `v6` and `v6p0`; without that change the release-asset setup would have been skipped silently and sites would have stopped receiving updates. The built plugin zip was installed into a WordPress site to confirm the updater loads. No action is needed on a site.
@@ -120,7 +124,8 @@ Initial public release. Connects WordPress to the [smoxy](https://www.smoxy.eu) 
 - GitHub Actions workflows: `lint`, `phpunit`, `plugin-check`, `smoke`, and `release` (builds zip + tar.gz on `v*` tag push and publishes a GitHub Release).
 - `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md`, `CHANGELOG.md`.
 
-[Unreleased]: https://github.com/smoxy-eu/wordpress-plugin/compare/v2.1.1...HEAD
+[Unreleased]: https://github.com/smoxy-eu/wordpress-plugin/compare/v2.1.2...HEAD
+[2.1.2]: https://github.com/smoxy-eu/wordpress-plugin/compare/v2.1.1...v2.1.2
 [2.1.1]: https://github.com/smoxy-eu/wordpress-plugin/compare/v2.1.0...v2.1.1
 [2.1.0]: https://github.com/smoxy-eu/wordpress-plugin/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/smoxy-eu/wordpress-plugin/compare/v1.1.0...v2.0.0
