@@ -105,7 +105,9 @@ jobs:
           retention-days: 7
 
   smoke-trunk:
-    name: PHP 8.5 / WP trunk (allowed to fail)
+    # Early warning: WordPress trunk on the next PHP minor (8.6, at release
+    # candidate). Not a required check; continue-on-error keeps it advisory.
+    name: PHP 8.6 / WP trunk (allowed to fail)
     runs-on: ubuntu-latest
     continue-on-error: true
     services:
@@ -125,7 +127,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.5'
+          php-version: '8.6'
           coverage: none
           extensions: mysqli, mbstring, xml
           tools: composer:v2, wp-cli

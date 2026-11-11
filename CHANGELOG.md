@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning 2.0.0](https://semver.org/spec/
 
 ## [Unreleased]
 
+### Compatibility
+
+- The two WordPress-trunk canaries (PHPUnit and smoke) moved from PHP 8.5 to PHP 8.6, which reached release candidate (8.6.0RC5). WordPress trunk now runs on the next PHP before it is generally available, so a deprecation or incompatibility shows up in CI before sites upgrade PHP. The canaries stay advisory (`continue-on-error`, not required checks); the required matrix is unchanged at PHP 8.0 through 8.5. CI only — nothing that ships changed.
+
 ## [2.1.2] - 2026-11-07
 
 Updates the bundled update checker library to 6.0. No breaking changes — upgrading is a drop-in replacement and needs no action on a site.
