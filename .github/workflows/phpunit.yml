@@ -33,6 +33,7 @@ jobs:
           - { php: '8.3', wp: 'latest' }
           - { php: '8.4', wp: 'latest' }
           - { php: '8.5', wp: 'latest' }
+          - { php: '8.6', wp: 'latest' }
           # Oldest supported WordPress (Requires at least: 6.0) on the PHP floor.
           - { php: '8.0', wp: '6.0' }
     services:
@@ -72,8 +73,9 @@ jobs:
           retention-days: 7
 
   phpunit-trunk:
-    # Early warning: WordPress trunk on the next PHP minor (8.6, at release
-    # candidate). Not a required check; continue-on-error keeps it advisory.
+    # Early warning: WordPress trunk on the newest PHP (8.6). Moves to the next
+    # PHP minor once that reaches release candidate. Not a required check;
+    # continue-on-error keeps it advisory.
     name: PHP 8.6 / WP trunk (allowed to fail)
     runs-on: ubuntu-latest
     continue-on-error: true
