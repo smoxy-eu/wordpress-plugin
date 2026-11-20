@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning 2.0.0](https://semver.org/spec/
 
 ### Compatibility
 
+- PHP 8.6 became generally available (8.6.0, 2026-11-19), so the PHPUnit and smoke matrices gained a `PHP 8.6 / WP latest` row: the full suite and the activate/exercise/uninstall run (which fails on any `PHP Deprecated` line in `debug.log`) now cover the released PHP 8.6 against the latest WordPress on every push and PR. The trunk canaries stay on 8.6 until the next PHP minor reaches release candidate. `Requires PHP` stays at 8.0 and no matrix row was dropped. CI only — nothing that ships changed.
 - The two WordPress-trunk canaries (PHPUnit and smoke) moved from PHP 8.5 to PHP 8.6, which reached release candidate (8.6.0RC5). WordPress trunk now runs on the next PHP before it is generally available, so a deprecation or incompatibility shows up in CI before sites upgrade PHP. The canaries stay advisory (`continue-on-error`, not required checks); the required matrix is unchanged at PHP 8.0 through 8.5. CI only — nothing that ships changed.
 
 ## [2.1.2] - 2026-11-07
